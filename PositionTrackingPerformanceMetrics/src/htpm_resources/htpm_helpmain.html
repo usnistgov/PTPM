@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <title>HTPM Visualization and Analysis</title>
+        <title>PTPM Collection, Visualization and Analysis</title>
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     </head>
     <body>
-        <h1>Human Tracking Performance Metrics(HTPM) Visualization and Analysis</h1>
-        <p>The Human Tracking Performance Metrics(HTPM) Visualization and Analysis
+        <h1>Position Tracking Performance Metrics(PTPM) Visualization and Analysis</h1>
+        <p>The Position Tracking Performance Metrics(PTPM) Visualization and Analysis
         was created to help visualize and analyze data taken from a human tracking
         or detection program. In order to determine the effectiveness of that program
         it is generally necessary to simultaneously collect data from a system-under-test(SUT)
@@ -20,7 +20,7 @@
         ground-truth(eg. gt.csv) and system-under-test(eg. sut.csv) file. </p>
         <h2>Getting the sourcecode</h2>
         <p>From within NIST, users with subversion and ssh installed can obtain the software using the command:</p>
-        <br><pre>svn co svn+ssh://lamb.mel.nist.gov/mxproj/foundation/svn_repos/trunk/HumanTrackingPerformanceMetrics</pre><br>
+        <br><pre>svn co svn+ssh://lamb.mel.nist.gov/mxproj/foundation/svn_repos/trunk/PositionTrackingPerformanceMetrics</pre><br>
         <p>Netbeans(to be installed in the next section) also includes subversion through ssh support. Therefore users without
             subversion or ssh installed may prefer to use that rather than installing
             stand-alone subversion or ssh software.</p>
@@ -32,13 +32,13 @@
             from <a href="http://www.oracle.com/technetwork/java/javase/downloads/index.html">
                 http://www.oracle.com/technetwork/java/javase/downloads/index.html</a>
             and/or <a href="http://netbeans.org/">http://netbeans.org/</a>.
-        <p>If the HTPM software is not already installed, choose the menu option 
+        <p>If the PTPM software is not already installed, choose the menu option 
             &quot;Teams-&gt;Subversion-&gt;Checkout ...&quot; from within Netbeans. Set the repository URL to
             &quot;svn+ssh://lamb.mel.nist.gov/mxproj/foundation/svn_repos&quot;. Enter a username 
             and either a password or id file. If the connection is successful you will be
-            able to browse the repository on the next screen to select the trunk/HumantTrackingPeformanceMetrics folder.
+            able to browse the repository on the next screen to select the trunk/PositiontTrackingPeformanceMetrics folder.
         </p>
-        <p>From within Netbeans open and select the project &quot;HumanTrackingPerformanceMetrics&quot;
+        <p>From within Netbeans open and select the project &quot;PositionTrackingPerformanceMetrics&quot;
         by using the menu option &quot;File-&gt;Open Project&quot;.</p>
         <p>Build the project using the F11 key. (Or use &quot;Run -> Build Project&quot; menu option or
             use the icon with the hammer.) </p>
@@ -65,17 +65,17 @@
         
         <h2>Running the program</h2>
         <p>On most systems the program can be run with default options by double clicking the file
-            HumanTrackingPerformanceMetrics.jar in the dist subdirectory.</p>
+            PositionTrackingPerformanceMetrics.jar in the dist subdirectory.</p>
         <p>Running from the command-line terminal allows the program to run on systems 
             where options need to be modified, allows additional options to be specified,
             provides more feed-back on problems or potential problems and allows multiple
             sets of example files to be processed within a script. </p>
         <p>The command line should be of the form:</p><br>
-        <pre><i>&lt;path-to-java&gt;</i> <i>&lt;java-options&gt;</i> -jar <i>&lt;path-to-HumanTrackingPerformanceMetrics.jar&gt;</i> <i>&lt;HTPM-options&gt;</i></pre>
+        <pre><i>&lt;path-to-java&gt;</i> <i>&lt;java-options&gt;</i> -jar <i>&lt;path-to-PositionTrackingPerformanceMetrics.jar&gt;</i> <i>&lt;PTPM-options&gt;</i></pre>
         <br>
         <p>See <a href="http://docs.oracle.com/javase/7/docs/technotes/tools/windows/java.html">http://docs.oracle.com/javase/7/docs/technotes/tools/windows/java.html</a>
             for information on the java options.</p>
-        <p>The HTPM options include:</p>
+        <p>The PTPM options include:</p>
         <dl>
             <dt>--gui</dt><dd>Open the graphical user interface. The graphical user interface will
                 be opened if no options are given. All other options suppress the display of the
@@ -93,9 +93,9 @@
            <dt>--roc</dt>
            <dd>Process the data, compute and print Receiver Operating Characteristics(ROC) data</dd>
         </dl>
-        <h2>Graphical components of HTPM main window</h2>
-        <img src="Screenshot_HumanTrackingPerformanceAnalysis.png"
-             alt="Screenshot of HTPM program described below."/>
+        <h2>Graphical components of PTPM main window</h2>
+        <img src="Screenshot_PositionTrackingPerformanceAnalysis.png"
+             alt="Screenshot of PTPM program described below."/>
         <p>The panel on the left side contains a tree structure that allows the 
             user to selected any ground-truth(GT) or system-under-test(SUT) 
             track. A track is a series of position measurements and associated 
@@ -149,7 +149,7 @@
         </p>
         <h2>Network Protocol</h2>
         <p>The default network protocol transfers data over a TCP socket using 
-            the same format as the CSV file. The HTPM GUI can act as either a client
+            the same format as the CSV file. The PTPM GUI can act as either a client
         or as a server or both. The only difference between client and server modes 
         is the order programs are started and the way the program it is connected to
         is programmed. To open the server port(s) check the boxes in the menu for
@@ -172,7 +172,7 @@
         <p>
             The optitrack is a set of infrared strobe cameras used with special targets.
             TrackingTools software from NaturalPoint will stream positions of the detected
-            targets using the NetNat protocol if so configured. The HTPM program
+            targets using the NetNat protocol if so configured. The PTPM program
             can read data directly using this protocol. To do so use the &quot;Connections-&gt;Connect/Show Live Optitrack Data&quot; menu 
             option.
         </p>

@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>PTPM Collection, Visualization and Analysis</title>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    </head>
+    <body>
+        <h1>Position Tracking Performance Metrics(PTPM) Visualization and Analysis</h1>
+        <p>The Position Tracking Performance Metrics(PTPM) Visualization and Analysis
+        was created to help visualize and analyze data taken from a human tracking
+        or detection program. In order to determine the effectiveness of that program
+        it is generally necessary to simultaneously collect data from a system-under-test(SUT)
+        and a ground-truth(GT) system. Differences between the two data sets are
+        interpreted as errors in the system-under-test. Unless one uses simulated data
+        the ground-truth is likely to also include errors. It is just assumed that
+        they are negligible at-least for the purpose of analyzing a given data set.</p>
+        <p>The tool can be used on-line or off-line. Only the optitrack is currently
+        supported to receive and display data on-line. Other sensors may be added in
+        the future. For offline analysis and display the first step is to open a
+        ground-truth(eg. gt.csv) and system-under-test(eg. sut.csv) file. </p>
+        
+        <h2>Compiling the sourcecode</h2>
+        <p>Install Netbeans 7.3 or higher and JDK 7+(optionally included with Netbeans) and ant 1.8.4 or higher (also included with Netbeans)
+            from <a href="http://www.oracle.com/technetwork/java/javase/downloads/index.html">
+                http://www.oracle.com/technetwork/java/javase/downloads/index.html</a>
+            and/or <a href="http://netbeans.org/">http://netbeans.org/</a>.
+        <p>From within Netbeans open and select the project &quot;PositionTrackingPerformanceMetrics&quot;
+        by using the menu option &quot;File-&gt;Open Project&quot;.</p>
+        <p>Build the project using the F11 key. (Or use &quot;Run -> Build Project&quot; menu option or
+            use the icon with the hammer.) </p>
+        <p>Run the program from within Netbeans using the F6 key.(Or use &quot;Run -> Run Project&quot; menu option or
+            use the icon with the green triangle pointing to the right.)</p>
+        <h2>Compiling the program on the command line:</h2>
+        <p>The ant program can compile the program on the command line. (However, it is not 
+        recommended. Conflicts with ant properties and environment variables often cause problems,
+        such as not being able to find a jar file or using the wrong version of a compile
+        tool)</p>
+        <p>Commands should be run from the top-level directory which contains the build.xml file.</p>
+        <p>To remove old temporary files:</p>
+        <pre>
+            ant clean
+        </pre>
+        <p>To build the output jar file:</p>
+        <pre>
+            ant jar
+        </pre>
+        <p>To build everything including javadoc (if configured) run ant with no arguments.</p>
+        <p>It is common for linux systems to have incompatible versions of ant on the path.
+            In order to make sure the version of ant is the version which came with
+            netbeans the environment variables PATH and ANT_HOME may need to be modified:</p>
+        
+        <h2>Running the program</h2>
+        <p>On most systems the program can be run with default options by double clicking the file
+            PositionTrackingPerformanceMetrics.jar in the dist subdirectory.</p>
+        <p>Running from the command-line terminal allows the program to run on systems 
+            where options need to be modified, allows additional options to be specified,
+            provides more feed-back on problems or potential problems and allows multiple
+            sets of example files to be processed within a script. </p>
+        <p>The command line should be of the form:</p><br>
+        <pre><i>&lt;path-to-java&gt;</i> <i>&lt;java-options&gt;</i> -jar <i>&lt;path-to-PositionTrackingPerformanceMetrics.jar&gt;</i> <i>&lt;PTPM-options&gt;</i></pre>
+        <br>
+        <p>See <a href="http://docs.oracle.com/javase/7/docs/technotes/tools/windows/java.html">http://docs.oracle.com/javase/7/docs/technotes/tools/windows/java.html</a>
+            for information on the java options.</p>
+        <p>The PTPM options include:</p>
+        <dl>
+            <dt>--gui</dt><dd>Open the graphical user interface. The graphical user interface will
+                be opened if no options are given. All other options suppress the display of the
+                graphical user interface unless this is added explicitly.</dd>
+            <dt>--gt <i>&lt;file&gt;</i></dt><dd>Read the csv file and treat its contents as ground-truth data.</dd>
+            <dt>--sut <i>&lt;file&gt;</i></dt><dd>Read the csv file and treat its contents as system under test data.</dd>
+           <dt>--setting <i>&lt;file&gt;</i></dt><dd>Read the a text file with custom settings.The default file is .htpm in the 
+           user's home directory. It is created when the graphical program is closed to preserve options set 
+           by the user.</dd>
+           <dt>--confidence <i>&lt;confidence-threshold&gt;</i></dt>
+           <dd>Set the confidence threshold. 
+           System under test entries with attached confidence less than the threshold will be ignored.</dd>
+           <dt>--process</dt>
+           <dd>Process the data previously loaded and print summary statistics.</dd>
+           <dt>--roc</dt>
+           <dd>Process the data, compute and print Receiver Operating Characteristics(ROC) data</dd>
+        </dl>
+        <h2>Graphical components of PTPM main window</h2>
+        <img src="Screenshot_PositionTrackingPerformanceAnalysis.png"
+             alt="Screenshot of PTPM program described below."/>
+        <p>The panel on the left side contains a tree structure that allows the 
+            user to selected any ground-truth(GT) or system-under-test(SUT) 
+            track. A track is a series of position measurements and associated 
+            data of a single entity taken periodically for some time during the 
+            experiment. The main reason for selecting a track is to make it 
+            easier to identify in the panel on the right. The right panel an 
+            overhead view of the tracks. By default unselected ground-truth 
+            tracks are red, selected ground-truth tracks are orange, unselected 
+            system-under-test tracks are blue and selected system-under-test 
+            tracks are purple.The solid circle indicates the current location of 
+            each person the circle surrounding it shows the area a robot must 
+            avoid to ensure no contact with that person. The colored part of the
+            track shows the path that person has followed so far (up to the 
+            current time selected with the slider at the bottom left). The grey part
+            of the track shows the path that will be followed after the currently
+            selected time.
+        </p>
+        <h2>File format</h2>
+        <p>The data in tracks can be read or written to CSV(comma-separated variable) files.
+        These files are ASCII text files but are typically imported or exported 
+        from a spreadsheet program. Each line of the file provides a position at 
+        one instance of time for one object. Lines are separated by the new-line 
+        character. An optional carriage return character before or after the new-line
+        will be ignored. Fields within a line are separated by the comma character.
+        Blank lines and lines that do not begin with a digit or decimal-point are
+        ignored. This allows comments and column headers to be stored in the file.
+        The first four fields(time,name,x,y) are required although the order could be
+        different. Default values can be assumed if later fields are missing.
+        </p>
+        <p>The following is the default way that fields are expected for data entries:</p>
+        <pre>
+        time,name,x,y,z,velx,vely,velz,confidence
+        </pre>
+        <dl>
+            <dt>time</dt><dd>seconds since 1970 in UTC, also known as &quot;Unix Time&quot;</dd>
+            <dt>name</dt><dd>an identifier used to group points at different times into tracks,
+                (If the same name is used in two different files the points are treated as 
+                belonging to different tracks.)</dd>
+            <dt>x</dt><dd>distance in meters along the x axis</dd>
+            <dt>y</dt><dd>distance in meters along the y axis</dd>
+            <dt>z</dt><dd>distance in meters along the z axis(not normally shown)</dd>
+            <dt>velx</dt><dd>speed in meters/second along the x axis</dd>
+            <dt>vely</dt><dd>speed in meters/second along the y axis</dd>
+            <dt>velz</dt><dd>speed in meters/second along the z axis</dd>
+            <dt>confidence</dt><dd>an indication of whether this is really an object 
+            of the type being tracked,(eg. is the object a human)</dd>
+        </dl>
+        <p>When opening a CSV file the user will be asked for the column numbers for each 
+        field so many CSV files that contain the same information but in different fields
+        can still be read.
+        </p>
+        <h2>Network Protocol</h2>
+        <p>The default network protocol transfers data over a TCP socket using 
+            the same format as the CSV file. The PTPM GUI can act as either a client
+        or as a server or both. The only difference between client and server modes 
+        is the order programs are started and the way the program it is connected to
+        is programmed. To open the server port(s) check the boxes in the menu for
+        &quot;Connections-&gt;Open Port to Accept GT data&quot; and/or  
+        &quot;Connections-&gt;Open Port to Accept SUT data&quot;. One or more programs
+        can then connect to the corresponding ports to stream data which will be
+        displayed in (soft) real-time. Alternatively the program providing the data
+        could be started first and written to accept connections on some port. The
+        menu options &quot;Connections-&gt;Connect to server of GT data&quot;
+        or &quot;Connections-&gt;Connect to server of SUT data&quot; would be used
+        to complete the connection. 
+        </p>
+        
+        <p>
+            In addition to the data, a line starting with &quot;source=&quot;
+            can be used to specify a label to make it easier to identify which
+            sensor a track came from. (eg. &quot;source=igps&quot; )
+        </p>
+        <h3>Optitrack</h3>
+        <p>
+            The optitrack is a set of infrared strobe cameras used with special targets.
+            TrackingTools software from NaturalPoint will stream positions of the detected
+            targets using the NetNat protocol if so configured. The PTPM program
+            can read data directly using this protocol. To do so use the &quot;Connections-&gt;Connect/Show Live Optitrack Data&quot; menu 
+            option.
+        </p>
+    </body>
+</html>

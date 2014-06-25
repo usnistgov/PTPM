@@ -1,9 +1,9 @@
 <#if licenseFirst??>
 ${licenseFirst}
 </#if>
-${licensePrefix}The NIST RCS (Real-time Control Systems)
-${licensePrefix}library is public domain software, however it is preferred
+${licensePrefix}This is public domain software, however it is preferred
 ${licensePrefix}that the following disclaimers be attached.
+${licensePrefix}
 ${licensePrefix}Software Copywrite/Warranty Disclaimer
 ${licensePrefix}
 ${licensePrefix}This software was developed at the National Institute of Standards and
@@ -18,7 +18,7 @@ ${licensePrefix}acknowledgement if the software is used. This software can be
 ${licensePrefix}redistributed and/or modified freely provided that any derivative works
 ${licensePrefix}bear some notice that they are derived from it, and any modified
 ${licensePrefix}versions bear some notice that they have been modified.
-${licensePrefix}and open the template in the editor.
+${licensePrefix}
 <#if licenseLast??>
 ${licenseLast}
 </#if>

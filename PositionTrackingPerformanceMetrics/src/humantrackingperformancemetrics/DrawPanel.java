@@ -82,16 +82,16 @@ public class DrawPanel extends JPanel {
         ColorConvertOp op = new ColorConvertOp(cs, null);
         return op.filter(img_in, null);
     }
-    public BufferedImage backgroundImageColor = getResourceImage("/htpm_resources/ISAT_Overhead.bmp");
-    public BufferedImage backgroundImageGray = toGray(backgroundImageColor);
-    public BufferedImage backgroundImage = backgroundImageColor;
-    public BufferedImage subBackgroundImage = backgroundImage;
-    public int scaled_bg_width = backgroundImage.getWidth();
-    public int scaled_bg_height = backgroundImage.getHeight();
-    public int sub_scaled_bg_width = subBackgroundImage.getWidth();
-    public int sub_scaled_bg_height = subBackgroundImage.getHeight();
-    public int sub_bg_width = backgroundImage.getWidth();
-    public int sub_bg_height = backgroundImage.getHeight();
+//    public BufferedImage backgroundImageColor = getResourceImage("/htpm_resources/ISAT_Overhead.bmp");
+ //   public BufferedImage backgroundImageGray = toGray(backgroundImageColor);
+  //  public BufferedImage backgroundImage = backgroundImageColor;
+//    public BufferedImage subBackgroundImage = backgroundImage;
+//    public int scaled_bg_width = backgroundImage.getWidth();
+//    public int scaled_bg_height = backgroundImage.getHeight();
+//    public int sub_scaled_bg_width = subBackgroundImage.getWidth();
+//    public int sub_scaled_bg_height = subBackgroundImage.getHeight();
+//    public int sub_bg_width = backgroundImage.getWidth();
+//    public int sub_bg_height = backgroundImage.getHeight();
     public int sub_bg_x = 0;
     public int sub_bg_y = 0;
     public Image scaledBackgroundImage = null;
@@ -208,8 +208,7 @@ public class DrawPanel extends JPanel {
             openMovie(movie_frames_per_second);
         }
         BufferedImage bi = getImage(640, 480, BufferedImage.TYPE_3BYTE_BGR);
-        htpm_mw.addFrame(bi);
-        return htpm_mw.isOk();
+        return htpm_mw.addFrame(bi);
     }
 
     /**
@@ -249,6 +248,8 @@ public class DrawPanel extends JPanel {
      */
     private double track_tail_highlight_time = 1.0;
 
+    static public Color overrideLineColor = null;
+    
     /**
      * Paint one track( the set of points associated with one
      * trackable,reciever, or person)
@@ -284,8 +285,8 @@ public class DrawPanel extends JPanel {
             radius_increase = HTPM_JFrame.s.sut_radius_increase;
         }
         this.update_img_to_world_scale(d);
-        if (null != t.color) {
-            g.setColor(t.color);
+        if (null != t.pointColor) {
+            g.setColor(t.pointColor);
         }
         if (t.currentPoint != null) {
             int oval_size = ((int) ((t.currentPoint.radius + radius_increase) / this.img_to_world_scale));
@@ -307,6 +308,12 @@ public class DrawPanel extends JPanel {
                     TrackPoint last_pt = t.data.get(t.cur_time_index);
                     if (null != last_pt) {
                         Point last_ipt = this.world2ImgPoint(last_pt);
+                        if(null != DrawPanel.overrideLineColor) {
+                            g.setColor(DrawPanel.overrideLineColor);
+                        } else if (t.lineColor != null && t.lineColor != t.pointColor) {
+                            g.setColor(t.lineColor);
+                        }
+                        
                         g.drawLine(ipt.x, ipt.y,
                                 last_ipt.x, last_ipt.y);
                     }
@@ -319,7 +326,9 @@ public class DrawPanel extends JPanel {
             if (use_gray_tracks) {
                 g.setColor(Color.lightGray);
             } else {
-                g.setColor(t.color);
+                if (null != t.pointColor) {
+                    g.setColor(t.pointColor);
+                }
             }
         }
         TrackPoint pt = t.data.get(0);
@@ -327,13 +336,20 @@ public class DrawPanel extends JPanel {
         for (int i = 0; i < t.data.size(); i++) {
             pt = t.data.get(i);
             Point ipt = this.world2ImgPoint(pt);
+            if (!this.showFutureTracks) {
+                if (null == t.currentPoint || pt.time > t.currentPoint.time) {
+                    break;
+                }
+            }
             if (pt.confidence >= this.confidence_threshold
                     && t.currentPoint != null
                     && t.cur_time_index >= i
                     && (this.track_tail_highlight_time <= 0
                     || t.currentPoint.time - pt.time <= this.track_tail_highlight_time)) {
-                g.setColor(t.color);
-                g.fillRect(ipt.x, ipt.y, 3, 3);
+                if (null != t.pointColor) {
+                    g.setColor(t.pointColor);
+                }
+                g.fillRect(ipt.x - this.TrackPointSize / 2, ipt.y - this.TrackPointSize / 2, this.TrackPointSize, this.TrackPointSize);
             } else {
                 if (!show_gray) {
                     return;
@@ -341,19 +357,67 @@ public class DrawPanel extends JPanel {
                 if (use_gray_tracks) {
                     g.setColor(Color.lightGray);
                 } else {
-                    g.setColor(t.color);
+                    if (null != t.pointColor) {
+                        g.setColor(t.pointColor);
+                    }
                 }
             }
-            if (ipt.x == last_ipt.x && ipt.y == last_ipt.y
+            if ((ipt.x == last_ipt.x && ipt.y == last_ipt.y)
                     || t.disconnected) {
-                g.fillRect(ipt.x, ipt.y, 3, 3);
+                g.fillRect(ipt.x - this.TrackPointSize / 2, ipt.y - this.TrackPointSize / 2, this.TrackPointSize, this.TrackPointSize);
             }
+            if(DrawPanel.overrideLineColor != null) {
+                g.setColor(DrawPanel.overrideLineColor);
+            } else if (use_gray_tracks) {
+                g.setColor(Color.lightGray);
+            } else if (t.lineColor != null && t.lineColor != t.pointColor) {
+                g.setColor(t.lineColor);
+            }
+
             if (!t.disconnected) {
                 g.drawLine(ipt.x, ipt.y,
                         last_ipt.x, last_ipt.y);
             }
             last_ipt = ipt;
         }
+    }
+    private boolean showFutureTracks = true;
+
+    /**
+     * Get the value of showFutureTracks
+     *
+     * @return the value of showFutureTracks
+     */
+    public boolean isShowFutureTracks() {
+        return showFutureTracks;
+    }
+
+    /**
+     * Set the value of showFutureTracks
+     *
+     * @param showFutureTracks new value of showFutureTracks
+     */
+    public void setShowFutureTracks(boolean showFutureTracks) {
+        this.showFutureTracks = showFutureTracks;
+    }
+    private int TrackPointSize = 3;
+
+    /**
+     * Get the value of TrackPointSize
+     *
+     * @return the value of TrackPointSize
+     */
+    public int getTrackPointSize() {
+        return TrackPointSize;
+    }
+
+    /**
+     * Set the value of TrackPointSize
+     *
+     * @param TrackPointSize new value of TrackPointSize
+     */
+    public void setTrackPointSize(int TrackPointSize) {
+        this.TrackPointSize = TrackPointSize;
     }
     public boolean show_disconnected = false;
 
@@ -385,7 +449,7 @@ public class DrawPanel extends JPanel {
     }
 
     public Track getClosestGTTrack(Point ipt) {
-        Point2D.Double pt = this.img2WorldPoint(ipt);
+        Point3D pt = this.img2WorldPoint(ipt);
         double min_dist = Double.POSITIVE_INFINITY;
         Track closest_track = null;
         if (null == tracks || null == HTPM_JFrame.gtlist) {
@@ -404,7 +468,7 @@ public class DrawPanel extends JPanel {
     }
 
     public Track getClosestSUTTrack(Point ipt) {
-        Point2D.Double pt = this.img2WorldPoint(ipt);
+        Point3D pt = this.img2WorldPoint(ipt);
         double min_dist = Double.POSITIVE_INFINITY;
         Track closest_track = null;
         if (null == tracks || null == HTPM_JFrame.sutlist) {
@@ -435,19 +499,67 @@ public class DrawPanel extends JPanel {
         //System.out.println("img_to_world_scale = " + img_to_world_scale);
     }
 
-    public Point world2ImgPoint(Point2D.Double wpt) {
+    public static enum coordType {
+
+        XY,
+        ZY,
+        XZ
+    };
+    private coordType displayCoordType = coordType.XY;
+
+    /**
+     * Get the value of displayCoordType
+     *
+     * @return the value of displayCoordType
+     */
+    public coordType getDisplayCoordType() {
+        return displayCoordType;
+    }
+
+    /**
+     * Set the value of displayCoordType
+     *
+     * @param displayCoordType new value of displayCoordType
+     */
+    public void setDisplayCoordType(coordType displayCoordType) {
+        this.displayCoordType = displayCoordType;
+    }
+
+    public Point world2ImgPoint(Point3D wpt) {
         Point ipt = new Point();
+        double wx = (displayCoordType == coordType.ZY) ? wpt.z : wpt.x;
+        double wy = (displayCoordType == coordType.XZ) ? -wpt.z : wpt.y;
         Dimension d = this.cur_dimension;
-        ipt.x = (int) ((wpt.x - x_min) / img_to_world_scale);
-        ipt.y = d.height - (int) ((wpt.y - y_min) / img_to_world_scale);
+        ipt.x = (int) ((wx - x_min) / img_to_world_scale);
+        ipt.y = d.height - (int) ((wy - y_min) / img_to_world_scale);
         return ipt;
     }
 
-    public Point2D.Double img2WorldPoint(Point ipt) {
-        Point2D.Double wpt = new Point2D.Double();
+    public Point3D img2WorldPoint(Point ipt) {
+        return img2WorldPoint(ipt, this.displayCoordType);
+    }
+
+    public Point3D img2WorldPoint(Point ipt, coordType _ct) {
+        Point3D wpt = new Point3D();
         Dimension d = this.cur_dimension;
-        wpt.x = ipt.x * img_to_world_scale + x_min;
-        wpt.y = (d.height - ipt.y) * img_to_world_scale + y_min;
+        double wx = ipt.x * img_to_world_scale + x_min;
+        double wy = (d.height - ipt.y) * img_to_world_scale + y_min;
+        switch (_ct) {
+            case XY:
+                wpt.x = wx;
+                wpt.y = wy;
+                break;
+
+            case ZY:
+                wpt.z = wx;
+                wpt.y = wy;
+                break;
+
+            case XZ:
+                wpt.x = wx;
+                wpt.z = -wy;
+                break;
+        }
         return wpt;
     }
 
@@ -460,6 +572,25 @@ public class DrawPanel extends JPanel {
         wrect.height = irect.height * img_to_world_scale;
         wrect.y -= wrect.height;
         return wrect;
+    }
+    private boolean showROIRect = false;
+
+    /**
+     * Get the value of showROIRect
+     *
+     * @return the value of showROIRect
+     */
+    public boolean isShowROIRect() {
+        return showROIRect;
+    }
+
+    /**
+     * Set the value of showROIRect
+     *
+     * @param showROIRect new value of showROIRect
+     */
+    public void setShowROIRect(boolean showROIRect) {
+        this.showROIRect = showROIRect;
     }
 
     /**
@@ -497,106 +628,106 @@ public class DrawPanel extends JPanel {
             this.drawROIRect(g, d, scale_m_per_pixel);
             return;
         }
-        if (this.show_background_image && this.backgroundImage != null) {
-
-            // Dividing a distance in meters by as scale in meter/pixel to get pixel units
-            int image_pix_x = (int) ((background_image_x - x_min) / scale_m_per_pixel);
-            int image_pix_y = (int) ((background_image_y - y_min) / scale_m_per_pixel);
-
-            Point pt = null;
-            Dimension vpd = d;
-//            if (use_sub_images) {
-//                try {
-//                    JViewport vp = (JViewport) this.getParent();
-//                    pt = vp.getViewPosition();
-//                    vpd = vp.getSize();
-//                } catch (Exception e) {
-//                    e.printStackTrace();
-//                    // ignore 
-//                }
+//        if (this.show_background_image && this.backgroundImage != null) {
+//
+//            // Dividing a distance in meters by as scale in meter/pixel to get pixel units
+//            int image_pix_x = (int) ((background_image_x - x_min) / scale_m_per_pixel);
+//            int image_pix_y = (int) ((background_image_y - y_min) / scale_m_per_pixel);
+//
+//            Point pt = null;
+//            Dimension vpd = d;
+////            if (use_sub_images) {
+////                try {
+////                    JViewport vp = (JViewport) this.getParent();
+////                    pt = vp.getViewPosition();
+////                    vpd = vp.getSize();
+////                } catch (Exception e) {
+////                    e.printStackTrace();
+////                    // ignore 
+////                }
+////            }
+//            double s = this.background_image_scale_pixels_per_m * scale_m_per_pixel;
+//            scaled_bg_width = (int) (this.backgroundImage.getWidth() / s);
+//            scaled_bg_height = (int) (this.backgroundImage.getHeight() / s);
+//            //double oversize = 0.0;
+////            if (null != pt) {
+////                oversize = Math.min(scaled_bg_width / vpd.width, scaled_bg_height / vpd.height);
+////                if (oversize > 4) {
+////                    int rescale = ((int) (oversize / 2.0));
+////                    int new_sub_bg_width = (int) this.backgroundImage.getWidth() / rescale;
+////                    int new_sub_bg_height = (int) this.backgroundImage.getHeight() / rescale;
+////                    int x = (int) ((pt.x * scale_m_per_pixel + this.x_min - this.background_image_x)
+////                            * this.background_image_scale_pixels_per_m);
+////                    if (x < 0) {
+////                        x = 0;
+////                    }
+////                    if (x > this.backgroundImage.getWidth() - 1) {
+////                        x = this.backgroundImage.getWidth() - 1;
+////                    }
+////                    System.out.println("x = " + x);
+////                    int new_sub_bg_x = sub_bg_width * (x / sub_bg_width);
+////                    int y = (int) ((pt.y * scale_m_per_pixel + this.y_min - this.background_image_y)
+////                            * this.background_image_scale_pixels_per_m);
+////                    y = -y;
+////                    if (y < 0) {
+////                        y = 0;
+////                    }
+////                    if (y > this.backgroundImage.getHeight() - 1) {
+////                        y = this.backgroundImage.getHeight() - 1;
+////                    }
+////                    System.out.println("y = " + y);
+////                    int new_sub_bg_y = sub_bg_height * (y / sub_bg_height);
+////                    System.out.println("pt = " + pt);
+////                    System.out.println("vpd = " + vpd);
+////                    System.out.println("new_sub_bg_x = " + new_sub_bg_x);
+////                    System.out.println("new_sub_bg_y = " + new_sub_bg_y);
+////                    System.out.println("new_sub_bg_width = " + new_sub_bg_width);
+////                    System.out.println("new_sub_bg_height = " + new_sub_bg_height);
+////                    if (new_sub_bg_width != sub_bg_width
+////                            || new_sub_bg_height != sub_bg_height
+////                            || new_sub_bg_x != sub_bg_x
+////                            || new_sub_bg_y != sub_bg_y) {
+////                        sub_bg_x = new_sub_bg_x;
+////                        sub_bg_y = new_sub_bg_y;
+////                        sub_bg_width = new_sub_bg_width;
+////                        sub_bg_height = new_sub_bg_height;
+////                        this.subBackgroundImage = this.backgroundImage.getSubimage(sub_bg_x,
+////                                sub_bg_y,
+////                                sub_bg_width,
+////                                sub_bg_height);
+////                        this.scaledBackgroundImage = null;
+////                    }
+////                    image_pix_x += (int) (sub_bg_x / s);
+////                    image_pix_y += (int) (sub_bg_y / 2);
+////                    System.out.println("image_pix_x = " + image_pix_x);
+////                    System.out.println("image_pix_y = " + image_pix_y);
+////                } else {
+////                    sub_bg_width = this.backgroundImage.getWidth();
+////                    sub_bg_height = this.backgroundImage.getHeight();
+////                    sub_bg_x = 0;
+////                    sub_bg_y = 0;
+////                    if (this.subBackgroundImage != this.backgroundImage) {
+////                        this.subBackgroundImage = this.backgroundImage;
+////                        this.scaledBackgroundImage = null;
+////                    }
+////                }
+////            }
+//            sub_bg_width = this.backgroundImage.getWidth();
+//            sub_bg_height = this.backgroundImage.getHeight();
+//            sub_bg_x = 0;
+//            sub_bg_y = 0;
+//            if (null == this.scaledBackgroundImage
+//                    || scale_m_per_pixel != this.scaledBackgroundImageScale) {
+//                sub_scaled_bg_width = (int) (sub_bg_width / s);
+//                sub_scaled_bg_height = (int) (sub_bg_height / s);
+//                this.scaledBackgroundImage = this.subBackgroundImage.getScaledInstance(sub_scaled_bg_width,
+//                        sub_scaled_bg_height, Image.SCALE_DEFAULT);
+//                this.scaledBackgroundImageScale = scale_m_per_pixel;
 //            }
-            double s = this.background_image_scale_pixels_per_m * scale_m_per_pixel;
-            scaled_bg_width = (int) (this.backgroundImage.getWidth() / s);
-            scaled_bg_height = (int) (this.backgroundImage.getHeight() / s);
-            //double oversize = 0.0;
-//            if (null != pt) {
-//                oversize = Math.min(scaled_bg_width / vpd.width, scaled_bg_height / vpd.height);
-//                if (oversize > 4) {
-//                    int rescale = ((int) (oversize / 2.0));
-//                    int new_sub_bg_width = (int) this.backgroundImage.getWidth() / rescale;
-//                    int new_sub_bg_height = (int) this.backgroundImage.getHeight() / rescale;
-//                    int x = (int) ((pt.x * scale_m_per_pixel + this.x_min - this.background_image_x)
-//                            * this.background_image_scale_pixels_per_m);
-//                    if (x < 0) {
-//                        x = 0;
-//                    }
-//                    if (x > this.backgroundImage.getWidth() - 1) {
-//                        x = this.backgroundImage.getWidth() - 1;
-//                    }
-//                    System.out.println("x = " + x);
-//                    int new_sub_bg_x = sub_bg_width * (x / sub_bg_width);
-//                    int y = (int) ((pt.y * scale_m_per_pixel + this.y_min - this.background_image_y)
-//                            * this.background_image_scale_pixels_per_m);
-//                    y = -y;
-//                    if (y < 0) {
-//                        y = 0;
-//                    }
-//                    if (y > this.backgroundImage.getHeight() - 1) {
-//                        y = this.backgroundImage.getHeight() - 1;
-//                    }
-//                    System.out.println("y = " + y);
-//                    int new_sub_bg_y = sub_bg_height * (y / sub_bg_height);
-//                    System.out.println("pt = " + pt);
-//                    System.out.println("vpd = " + vpd);
-//                    System.out.println("new_sub_bg_x = " + new_sub_bg_x);
-//                    System.out.println("new_sub_bg_y = " + new_sub_bg_y);
-//                    System.out.println("new_sub_bg_width = " + new_sub_bg_width);
-//                    System.out.println("new_sub_bg_height = " + new_sub_bg_height);
-//                    if (new_sub_bg_width != sub_bg_width
-//                            || new_sub_bg_height != sub_bg_height
-//                            || new_sub_bg_x != sub_bg_x
-//                            || new_sub_bg_y != sub_bg_y) {
-//                        sub_bg_x = new_sub_bg_x;
-//                        sub_bg_y = new_sub_bg_y;
-//                        sub_bg_width = new_sub_bg_width;
-//                        sub_bg_height = new_sub_bg_height;
-//                        this.subBackgroundImage = this.backgroundImage.getSubimage(sub_bg_x,
-//                                sub_bg_y,
-//                                sub_bg_width,
-//                                sub_bg_height);
-//                        this.scaledBackgroundImage = null;
-//                    }
-//                    image_pix_x += (int) (sub_bg_x / s);
-//                    image_pix_y += (int) (sub_bg_y / 2);
-//                    System.out.println("image_pix_x = " + image_pix_x);
-//                    System.out.println("image_pix_y = " + image_pix_y);
-//                } else {
-//                    sub_bg_width = this.backgroundImage.getWidth();
-//                    sub_bg_height = this.backgroundImage.getHeight();
-//                    sub_bg_x = 0;
-//                    sub_bg_y = 0;
-//                    if (this.subBackgroundImage != this.backgroundImage) {
-//                        this.subBackgroundImage = this.backgroundImage;
-//                        this.scaledBackgroundImage = null;
-//                    }
-//                }
-//            }
-            sub_bg_width = this.backgroundImage.getWidth();
-            sub_bg_height = this.backgroundImage.getHeight();
-            sub_bg_x = 0;
-            sub_bg_y = 0;
-            if (null == this.scaledBackgroundImage
-                    || scale_m_per_pixel != this.scaledBackgroundImageScale) {
-                sub_scaled_bg_width = (int) (sub_bg_width / s);
-                sub_scaled_bg_height = (int) (sub_bg_height / s);
-                this.scaledBackgroundImage = this.subBackgroundImage.getScaledInstance(sub_scaled_bg_width,
-                        sub_scaled_bg_height, Image.SCALE_DEFAULT);
-                this.scaledBackgroundImageScale = scale_m_per_pixel;
-            }
-            g.drawImage(scaledBackgroundImage,
-                    image_pix_x,
-                    d.height - image_pix_y, null);
-        }
+//            g.drawImage(scaledBackgroundImage,
+//                    image_pix_x,
+//                    d.height - image_pix_y, null);
+//        }
         g.setColor(Color.lightGray);
         this.paintGridLabels(g, d, scale_m_per_pixel);
         if (!this.show_only_selected) {
@@ -611,7 +742,9 @@ public class DrawPanel extends JPanel {
         if (this.show_labels) {
             this.paintTrackLabels(g, d);
         }
-        this.drawROIRect(g, d, scale_m_per_pixel);
+        if (this.showROIRect) {
+            this.drawROIRect(g, d, scale_m_per_pixel);
+        }
         if (this.showMeasurement) {
         }
         switch (this.dragEnum) {
@@ -1035,35 +1168,40 @@ public class DrawPanel extends JPanel {
                 if (!t.is_groundtruth) {
                     radius_increase = HTPM_JFrame.s.sut_radius_increase;
                 }
+
                 if (t.currentPoint != null) {
+                    double x = (this.displayCoordType == coordType.ZY) ? t.currentPoint.z : t.currentPoint.x;
+                    double y = (this.displayCoordType == coordType.XZ) ? -t.currentPoint.z : t.currentPoint.y;
                     double radius = t.currentPoint.radius + radius_increase;
-                    if (max_x < t.currentPoint.x + radius + 0.1) {
-                        max_x = t.currentPoint.x + radius + 0.1;
+                    if (max_x < x + radius + 0.1) {
+                        max_x = x + radius + 0.1;
                     }
-                    if (min_x > t.currentPoint.x - radius + 0.1) {
-                        min_x = t.currentPoint.x - radius + 0.1;
+                    if (min_x > x - radius + 0.1) {
+                        min_x = x - radius + 0.1;
                     }
-                    if (max_y < t.currentPoint.y + radius + 0.1) {
-                        max_y = t.currentPoint.y + radius + 0.1;
+                    if (max_y < y + radius + 0.1) {
+                        max_y = y + radius + 0.1;
                     }
-                    if (min_y > t.currentPoint.y - radius + 0.1) {
-                        min_y = t.currentPoint.y - radius + 0.1;
+                    if (min_y > y - radius + 0.1) {
+                        min_y = y - radius + 0.1;
                     }
                 }
                 if (null != t.data) {
                     for (int tpi = 0; tpi < t.data.size(); tpi++) {
                         TrackPoint tp = t.data.get(tpi);
-                        if (max_x < tp.x + 0.1) {
-                            max_x = tp.x + 0.1;
+                        double x = (this.displayCoordType == coordType.ZY) ? tp.z : tp.x;
+                        double y = (this.displayCoordType == coordType.XZ) ? -tp.z : tp.y;
+                        if (max_x < x + 0.1) {
+                            max_x = x + 0.1;
                         }
-                        if (min_x > tp.x - 0.1) {
-                            min_x = tp.x - 0.1;
+                        if (min_x > x - 0.1) {
+                            min_x = x - 0.1;
                         }
-                        if (max_y < tp.y + 0.1) {
-                            max_y = tp.y + 0.1;
+                        if (max_y < y + 0.1) {
+                            max_y = y + 0.1;
                         }
-                        if (min_y > tp.y - 0.1) {
-                            min_y = tp.y - 0.1;
+                        if (min_y > y - 0.1) {
+                            min_y = y - 0.1;
                         }
                     }
                 }
@@ -1082,22 +1220,22 @@ public class DrawPanel extends JPanel {
             if (min_y > this.background_image_y) {
                 min_y = this.background_image_y;
             }
-            double bg_image_x_max = this.background_image_x
-                    + this.scaled_bg_width * this.scaledBackgroundImageScale;
-            double bg_image_y_max = this.background_image_y
-                    - this.scaled_bg_height * this.scaledBackgroundImageScale;
-            if (max_x < bg_image_x_max) {
-                max_x = bg_image_x_max;
-            }
-            if (min_x > bg_image_x_max) {
-                min_x = bg_image_x_max;
-            }
-            if (max_y < bg_image_y_max) {
-                max_y = bg_image_y_max;
-            }
-            if (min_y > bg_image_y_max) {
-                min_y = bg_image_y_max;
-            }
+//            double bg_image_x_max = this.background_image_x
+//                    + this.scaled_bg_width * this.scaledBackgroundImageScale;
+//            double bg_image_y_max = this.background_image_y
+//                    - this.scaled_bg_height * this.scaledBackgroundImageScale;
+//            if (max_x < bg_image_x_max) {
+//                max_x = bg_image_x_max;
+//            }
+//            if (min_x > bg_image_x_max) {
+//                min_x = bg_image_x_max;
+//            }
+//            if (max_y < bg_image_y_max) {
+//                max_y = bg_image_y_max;
+//            }
+//            if (min_y > bg_image_y_max) {
+//                min_y = bg_image_y_max;
+//            }
 
         }
         if (Double.isInfinite(min_x) || Double.isNaN(min_x)) {
@@ -1119,6 +1257,77 @@ public class DrawPanel extends JPanel {
         this.y_min = grid * (Math.floor(min_y / grid));
         return limits;
     }
+
+    public void zoomOut() {
+        double diff = grid / 2.0;
+        if (diff > (x_max - x_min) / 5) {
+            diff = (x_max - x_min) / 5;
+        }
+        if (diff > (y_max - y_min) / 5) {
+            diff = (y_max - y_min) / 5;
+        }
+        this.x_max += diff;
+        this.x_min -= diff;
+        this.y_max += diff;
+        this.y_min -= diff;
+        this.repaint();
+    }
+
+    public void zoomIn() {
+        double diff = grid / 2.0;
+        if (diff > (x_max - x_min) / 5) {
+            diff = (x_max - x_min) / 5;
+        }
+        if (diff > (y_max - y_min) / 5) {
+            diff = (y_max - y_min) / 5;
+        }
+        this.x_max -= diff;
+        this.x_min += diff;
+        this.y_max -= diff;
+        this.y_min += diff;
+        this.repaint();
+    }
+
+    public void panLeft() {
+        double diff = grid / 2.0;
+        if (diff > (x_max - x_min) / 5) {
+            diff = (x_max - x_min) / 5;
+        }
+        this.x_max -= diff;
+        this.x_min -= diff;
+        this.repaint();
+    }
+
+    public void panRight() {
+        double diff = grid / 2.0;
+        if (diff > (x_max - x_min) / 5) {
+            diff = (x_max - x_min) / 5;
+        }
+        this.x_max += diff;
+        this.x_min += diff;
+        this.repaint();
+    }
+
+    public void panUp() {
+        double diff = grid / 2.0;
+        if (diff > (y_max - y_min) / 5) {
+            diff = (y_max - y_min) / 5;
+        }
+        this.y_max -= diff;
+        this.y_min -= diff;
+        this.repaint();
+    }
+
+    public void panDown() {
+        double diff = grid / 2.0;
+        if (diff > (y_max - y_min) / 5) {
+            diff = (y_max - y_min) / 5;
+        }
+        this.y_max += diff;
+        this.y_min += diff;
+        this.repaint();
+    }
+
     public double ROI[] = {0.0, 0.0, 10.0, 10.0};
 
     public void drawROIRect(Graphics g, Dimension d, double inverse_scale) {

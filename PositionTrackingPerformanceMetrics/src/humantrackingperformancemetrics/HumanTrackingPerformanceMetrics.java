@@ -25,18 +25,57 @@ public class HumanTrackingPerformanceMetrics {
                 HTPM_JFrame.main(args);
                 break;
             } else if (args[i].compareTo("--gt")== 0) {
-                HTPM_JFrame.LoadGroundTruthFile(args[i+1],CsvParseOptions.DEFAULT);
+                HTPM_JFrame.LoadGroundTruthFile(args[i+1]);
                 i++;
+            } else if (args[i].compareTo("--copyandprocess")== 0) {
+                HTPM_JFrame.CopyAndProcessTrackCsv(args[i+1], args[i+2]);
+                i+=2;
             } else if (args[i].compareTo("--settings")== 0) {
                 HTPM_JFrame.settings_file = new File(args[i+1]);
                 HTPM_JFrame.s = HTPM_JFrame.readSettings(HTPM_JFrame.settings_file);
                 i++;
             } else if (args[i].compareTo("--sut")== 0) {
-                HTPM_JFrame.LoadSystemUnderTestFile(args[i+1],CsvParseOptions.DEFAULT);
+                HTPM_JFrame.LoadSystemUnderTestFile(args[i+1]);
+                i++;
+            } else if (args[i].compareTo("--sut_time_offset")== 0) {
+                HTPM_JFrame.sut_time_offset = Double.valueOf(args[i+1]);
+                i++;
+            } else if (args[i].compareTo("--gt_time_offset")== 0) {
+                HTPM_JFrame.gt_time_offset = Double.valueOf(args[i+1]);
                 i++;
             } else if (args[i].compareTo("--confidence")== 0) {
                 HTPM_JFrame.s.confidence_threshold = Double.valueOf(args[i+1]);
                 i++;
+            } else if (args[i].compareTo("--interpolate")== 0) {
+                HTPM_JFrame.interpolate(new File(args[i+1]));
+                i++;
+            } else if (args[i].compareTo("--transform")== 0) {
+                HTPM_JFrame.loadDefaultTransform(new File(args[i+1]));
+                i++;
+            } else if (args[i].compareTo("--time_inc")== 0) {
+                HTPM_JFrame.s.time_inc = Double.valueOf(args[i+1]);
+                i++;
+            }else if (args[i].compareTo("--sutInterpolateMethod")== 0) {
+                HTPM_JFrame.s.sutInterpMethod = InterpolationMethodEnum.valueOf(args[i+1]);
+                i++;
+            }else if (args[i].compareTo("--gtInterpolateMethod")== 0) {
+                HTPM_JFrame.s.gtInterpMethod = InterpolationMethodEnum.valueOf(args[i+1]);
+                i++;
+            } else if (args[i].compareTo("--time_scale")== 0) {
+                CsvParseOptions.DEFAULT.TIME_SCALE = Double.valueOf(args[i+1]);
+                i++;
+            } else if (args[i].compareTo("--dist_scale")== 0) {
+                CsvParseOptions.DEFAULT.DISTANCE_SCALE = Double.valueOf(args[i+1]);
+                i++;
+            } else if (args[i].compareTo("--writeCombinedGT")== 0) {
+                HTPM_JFrame.saveCombinedFile(HTPM_JFrame.gtlist, args[i+1]);
+                i++;
+            }else if (args[i].compareTo("--writeCombinedSUT")== 0) {
+                HTPM_JFrame.saveCombinedFile(HTPM_JFrame.sutlist, args[i+1]);
+                i++;
+            } else if (args[i].compareTo("--findMatches")== 0) {
+                HTPM_JFrame.findMatches(new File(args[i+1]), new File(args[i+2]), new File(args[i+3]));
+                i +=3;
             } else if (args[i].compareTo("--process")== 0) {
                 FrameStats fs = HTPM_JFrame.processAll();
                 System.out.println("TRUE_Positive="+fs.true_occupied_area/fs.total_gt_occupied_area);
@@ -54,6 +93,9 @@ public class HumanTrackingPerformanceMetrics {
                     System.out.println(""+fs.true_occupied_area/fs.total_gt_occupied_area
                             +","+fs.false_occupied_area/fs.total_gt_occupied_area);
                 }
+            } else {
+                System.err.println("Unrecognized argument :"+args[i]);
+                System.exit(1);
             }
         }
     }

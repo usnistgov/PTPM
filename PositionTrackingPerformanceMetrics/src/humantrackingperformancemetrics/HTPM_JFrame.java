@@ -28,9 +28,11 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileReader;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
+import java.io.StringReader;
 import java.lang.reflect.Field;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
@@ -51,9 +53,11 @@ import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.SynchronousQueue;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.imageio.ImageIO;
@@ -66,6 +70,7 @@ import javax.swing.JOptionPane;
 import javax.swing.JTree;
 import javax.swing.JViewport;
 import javax.swing.ProgressMonitor;
+import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.tree.DefaultMutableTreeNode;
@@ -104,30 +109,30 @@ public class HTPM_JFrame extends javax.swing.JFrame {
             this.setCurrentTime(inner_min_time + 0.001);
             this.updateDrawPanelViewport();
         }
-        DefaultTreeCellRenderer renderer =
-                new DefaultTreeCellRenderer() {
-            private Track last_t = null;
-            private ImageIcon last_image_icon = null;
+        DefaultTreeCellRenderer renderer
+                = new DefaultTreeCellRenderer() {
+                    private Track last_t = null;
+                    private ImageIcon last_image_icon = null;
 
-            @Override
-            public Component getTreeCellRendererComponent(
-                    JTree tree,
-                    Object value,
-                    boolean sel,
-                    boolean expanded,
-                    boolean leaf,
-                    int row,
-                    boolean hasFocus) {
+                    @Override
+                    public Component getTreeCellRendererComponent(
+                            JTree tree,
+                            Object value,
+                            boolean sel,
+                            boolean expanded,
+                            boolean leaf,
+                            int row,
+                            boolean hasFocus) {
 
-                super.getTreeCellRendererComponent(
-                        tree, value, sel,
-                        expanded, leaf, row,
-                        hasFocus);
-                try {
-                    if (leaf) {
-                        DefaultMutableTreeNode n =
-                                (DefaultMutableTreeNode) value;
-                        final Track t = (Track) n.getUserObject();
+                                super.getTreeCellRendererComponent(
+                                        tree, value, sel,
+                                        expanded, leaf, row,
+                                        hasFocus);
+                                try {
+                                    if (leaf) {
+                                        DefaultMutableTreeNode n
+                                        = (DefaultMutableTreeNode) value;
+                                        final Track t = (Track) n.getUserObject();
 //                                if (null != last_t
 //                                        && null != last_image_icon
 //                                        && last_t.hidden == t.hidden
@@ -136,31 +141,31 @@ public class HTPM_JFrame extends javax.swing.JFrame {
 //                                        && last_t.explicit_color == t.explicit_color) {
 //                                    this.setIcon(this.last_image_icon);
 //                                } else {
-                        BufferedImage bi =
-                                new BufferedImage(10, 10, BufferedImage.TYPE_3BYTE_BGR);
-                        Graphics g = bi.getGraphics();
-                        g.setColor(Color.WHITE);
-                        g.fillRect(0, 0, 10, 10);
-                        if (t.hidden) {
-                            g.setColor(Color.GRAY);
-                        } else {
-                            g.setColor(t.color);
-                        }
-                        g.fillOval(1, 1, 8, 8);
-                        bi.flush();
-                        ImageIcon II = new ImageIcon(bi);
-                        this.setText(t.name + " [" + t.data.size() + "]");
-                        this.setIcon(II);
-                        this.last_t = t;
-                        this.last_image_icon = II;
+                                        BufferedImage bi
+                                        = new BufferedImage(10, 10, BufferedImage.TYPE_3BYTE_BGR);
+                                        Graphics g = bi.getGraphics();
+                                        g.setColor(Color.WHITE);
+                                        g.fillRect(0, 0, 10, 10);
+                                        if (t.hidden) {
+                                            g.setColor(Color.GRAY);
+                                        } else {
+                                            g.setColor(t.pointColor);
+                                        }
+                                        g.fillOval(1, 1, 8, 8);
+                                        bi.flush();
+                                        ImageIcon II = new ImageIcon(bi);
+                                        this.setText(t.name + " [" + t.data.size() + "]");
+                                        this.setIcon(II);
+                                        this.last_t = t;
+                                        this.last_image_icon = II;
 //                                }
-                    }
-                } catch (Exception e) {
-                    //e.printStackTrace();
-                }
-                return this;
-            }
-        };
+                                    }
+                                } catch (Exception e) {
+                                    //e.printStackTrace();
+                                }
+                                return this;
+                            }
+                };
         this.jTree1.setCellRenderer(renderer);
         this.jCheckBoxMenuItemGtOnTop.setSelected(s.gt_on_top);
         this.updateMenuLabels();
@@ -170,6 +175,44 @@ public class HTPM_JFrame extends javax.swing.JFrame {
             Logger.getLogger(HTPM_JFrame.class.getName()).log(Level.SEVERE, null, ex);
         }
         reloadRecentFileInfo();
+    }
+
+    public void addRecentMatchFileMenuItem(String filename) {
+
+        JMenuItem jmi = new JMenuItem(filename);
+        final File f = new File(filename);
+        jmi.addActionListener(new ActionListener() {
+
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                showMatchesFile(f);
+            }
+        });
+        this.jMenuRecentMatchFiles.add(jmi);
+    }
+
+    public void addRecentMatchFileInfo(File f) throws IOException {
+        try (BufferedReader br = new BufferedReader(new FileReader(f))) {
+            String line = null;
+            while (null != (line = br.readLine())) {
+                if (line.startsWith("filename=")) {
+                    addRecentMatchFileMenuItem(line.substring("filename=".length()));
+                    break;
+                }
+            }
+        }
+    }
+
+    public void saveRecentMatchFile(String filename) throws IOException {
+        File recentFilesDir = new File(System.getProperty("user.home"), ".htpm_recent_files");
+        File recentMatchFilesDir = new File(recentFilesDir, ".matches");
+        recentMatchFilesDir.mkdirs();
+        String filename_tmp = filename.replace('/', '.').replace('\\', '.').replace(':', '.').replace(' ', '_');
+        File f = new File(recentMatchFilesDir, filename_tmp);
+        try (PrintStream ps = new PrintStream(new FileOutputStream(f))) {
+            ps.println("filename=" + filename);
+        }
+        addRecentMatchFileMenuItem(filename);
     }
 
     public void reloadRecentFileInfo() {
@@ -205,6 +248,14 @@ public class HTPM_JFrame extends javax.swing.JFrame {
                     loadRecentFileInfo(f, false);
                 }
             }
+            File recentMatchFilesDir = new File(recentFilesDir, ".matches");
+            File matchesfa[] = recentMatchFilesDir.listFiles();
+            if (null != matchesfa) {
+                for (File f : matchesfa) {
+                    addRecentMatchFileInfo(f);
+                }
+            }
+
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -326,6 +377,14 @@ public class HTPM_JFrame extends javax.swing.JFrame {
             this.jCheckBoxMenuItemIgnoreSUTVelocities.setSelected(s.ignore_sut_velocities);
             this.jCheckBoxMenuItemGrayTracks.setSelected(s.use_gray_tracks);
             this.drawPanel1.use_gray_tracks = this.jCheckBoxMenuItemGrayTracks.isSelected();
+            DrawPanel.coordType displayCoordType = DrawPanel.coordType.valueOf(s.displayCoordType);
+            if (null != displayCoordType) {
+                this.drawPanel1.setDisplayCoordType(displayCoordType);
+            }
+            this.updateDisplayCoordMenuItems();
+            this.jCheckBoxMenuItemShowDisconnected.setSelected(s.show_disconnected_points);
+            this.drawPanel1.show_disconnected = s.show_disconnected_points;
+            
         }
     }
 
@@ -386,6 +445,10 @@ public class HTPM_JFrame extends javax.swing.JFrame {
          * Time increment between updating statistics.
          */
         public double time_inc = 0.05;
+
+        public InterpolationMethodEnum gtInterpMethod = InterpolationMethodEnum.CUBIC;
+        public InterpolationMethodEnum sutInterpMethod = InterpolationMethodEnum.VELOCITY;
+
         /**
          * Scale in pixels/meter for occupancy grid.
          */
@@ -412,15 +475,15 @@ public class HTPM_JFrame extends javax.swing.JFrame {
         /**
          * Hostname or IP address of the system running the optitrack software.
          */
-        public String optitrack_host = "129.6.152.101";
+        public String optitrack_host = "129.6.39.54";
         public String optitrack_trasform_filename;
         /**
          * Default order of the coordinates to use from optitrack.
          */
         public XyzOrderEnum optitrack_xyz_order = XyzOrderEnum.XY;
-        public String gt_server_host = "129.6.152.101";
+        public String gt_server_host = "129.6.39.54";
         public short gt_server_port = 5150;
-        public String sut_server_host = "129.6.152.101";
+        public String sut_server_host = "129.6.39.54";
         public short sut_server_port = 5150;
         public boolean show_background_image = false;
         public double background_image_x = 0.0;
@@ -467,7 +530,12 @@ public class HTPM_JFrame extends javax.swing.JFrame {
          */
         public double track_tail_highlight_time = 1.0;
         public boolean use_gray_tracks = true;
+
+        public String displayCoordType = "XY";
+        
+        public boolean show_disconnected_points = false;
     }
+    
     /**
      * Single instance of class to user settable settings that should persist in
      * the users ".htpm" file in their home directory. Most likely only the
@@ -501,6 +569,57 @@ public class HTPM_JFrame extends javax.swing.JFrame {
         }
     }
 
+    public static settings readSettings(BufferedReader br) throws IOException {
+        String line;
+        s = new settings();
+        while ((line = br.readLine()) != null) {
+            line = line.trim();
+            if (line.length() < 2) {
+                continue;
+            }
+            if (line.startsWith("#")) {
+                continue;
+            }
+            String parts[] = line.split("[\t,=]+");
+            if (parts == null || parts.length < 2) {
+                continue;
+            }
+            String var = parts[0];
+            String val = parts[1];
+
+            if (var.compareToIgnoreCase("optitrack_host") == 0) {
+                s.optitrack_host = val.trim();
+                continue;
+            }
+            if (var.compareToIgnoreCase("optitrack_xyz_order") == 0) {
+                s.optitrack_xyz_order = XyzOrderEnum.valueOf(val.trim());
+                continue;
+            }
+            for (Field field : settings.class.getFields()) {
+                try {
+                    if (var.compareTo(field.getName()) == 0) {
+                        if (field.getType().isAssignableFrom(double.class)) {
+                            field.setDouble(s, Double.valueOf(val));
+                        } else if (field.getType().isAssignableFrom(int.class)) {
+                            field.setInt(s, Integer.valueOf(val));
+                        } else if (field.getType().isAssignableFrom(short.class)) {
+                            field.setShort(s, Short.valueOf(val));
+                        } else if (field.getType().isAssignableFrom(boolean.class)) {
+                            field.setBoolean(s, Boolean.valueOf(val));
+                        } else if (field.getType().isAssignableFrom(InterpolationMethodEnum.class)) {
+                            field.set(s, InterpolationMethodEnum.valueOf(val));
+                        } else {
+                            field.set(s, val);
+                        }
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        return s;
+    }
+
     /**
      * Read settings from a file. The file is expected to be in var=val\n
      * format. If we need to save a string with an "=" in it there will be a
@@ -515,51 +634,8 @@ public class HTPM_JFrame extends javax.swing.JFrame {
                 return null;
             }
             BufferedReader br = new BufferedReader(new FileReader(f));
-            String line;
-            s = new settings();
-            while ((line = br.readLine()) != null) {
-                line = line.trim();
-                if (line.length() < 2) {
-                    continue;
-                }
-                if (line.startsWith("#")) {
-                    continue;
-                }
-                String parts[] = line.split("[\t,=]+");
-                if (parts == null || parts.length < 2) {
-                    continue;
-                }
-                String var = parts[0];
-                String val = parts[1];
+            s = readSettings(br);
 
-                if (var.compareToIgnoreCase("optitrack_host") == 0) {
-                    s.optitrack_host = val.trim();
-                    continue;
-                }
-                if (var.compareToIgnoreCase("optitrack_xyz_order") == 0) {
-                    s.optitrack_xyz_order = XyzOrderEnum.valueOf(val.trim());
-                    continue;
-                }
-                for (Field field : settings.class.getFields()) {
-                    try {
-                        if (var.compareTo(field.getName()) == 0) {
-                            if (field.getType().isAssignableFrom(double.class)) {
-                                field.setDouble(s, Double.valueOf(val));
-                            } else if (field.getType().isAssignableFrom(int.class)) {
-                                field.setInt(s, Integer.valueOf(val));
-                            } else if (field.getType().isAssignableFrom(short.class)) {
-                                field.setShort(s, Short.valueOf(val));
-                            } else if (field.getType().isAssignableFrom(boolean.class)) {
-                                field.setBoolean(s, Boolean.valueOf(val));
-                            } else {
-                                field.set(s, val);
-                            }
-                        }
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
             return s;
         } catch (IOException ex) {
             Logger.getLogger(HTPM_JFrame.class.getName()).log(Level.SEVERE, null, ex);
@@ -583,6 +659,7 @@ public class HTPM_JFrame extends javax.swing.JFrame {
         jButtonStatsDialogOk = new javax.swing.JButton();
         jSeparator4 = new javax.swing.JSeparator();
         buttonGroupDragMode = new javax.swing.ButtonGroup();
+        buttonGroupDisplayCoord = new javax.swing.ButtonGroup();
         jPanel1 = new javax.swing.JPanel();
         jSplitPane1 = new javax.swing.JSplitPane();
         jScrollPaneTree = new javax.swing.JScrollPane();
@@ -609,28 +686,35 @@ public class HTPM_JFrame extends javax.swing.JFrame {
         jRadioButtonMeasure = new javax.swing.JRadioButton();
         jRadioButtonPan = new javax.swing.JRadioButton();
         jRadioButtonSelectTracks = new javax.swing.JRadioButton();
+        jCheckBoxRecording = new javax.swing.JCheckBox();
         jMenuBar1 = new javax.swing.JMenuBar();
         jMenu1 = new javax.swing.JMenu();
         jMenu8 = new javax.swing.JMenu();
         jMenuItemSaveSettings = new javax.swing.JMenuItem();
         jMenuItemOpenSettings = new javax.swing.JMenuItem();
         jMenuItemResetSettings = new javax.swing.JMenuItem();
+        jMenuItemEditSettings = new javax.swing.JMenuItem();
+        jMenuMatches = new javax.swing.JMenu();
+        jMenuRecentMatchFiles = new javax.swing.JMenu();
+        jMenuItemFindMatches = new javax.swing.JMenuItem();
+        jMenuItemOpenMatchFile = new javax.swing.JMenuItem();
         jMenuItemOpenGroundTruth = new javax.swing.JMenuItem();
+        jMenuRecentGroundTruthCsv = new javax.swing.JMenu();
         jMenuItemOpenSutCsv = new javax.swing.JMenuItem();
         jSeparator1 = new javax.swing.JPopupMenu.Separator();
+        jMenuRecentSystemUnderTestCsv = new javax.swing.JMenu();
         jMenuItemSaveGroundTruth = new javax.swing.JMenuItem();
         jMenuItemSaveSut = new javax.swing.JMenuItem();
         jSeparator3 = new javax.swing.JPopupMenu.Separator();
         jCheckBoxMenuItemSaveImages = new javax.swing.JCheckBoxMenuItem();
         jCheckBoxMenuItemPlay = new javax.swing.JCheckBoxMenuItem();
         jCheckBoxMenuItemPlayAndMakeMovie = new javax.swing.JCheckBoxMenuItem();
-        jCheckBoxMenuItemRecordLive = new javax.swing.JCheckBoxMenuItem();
         jMenuItemSaveImages = new javax.swing.JMenuItem();
         jMenuItemGotoTime = new javax.swing.JMenuItem();
         jMenuItemGotoPlotterMinTime = new javax.swing.JMenuItem();
         jMenuItemClearData = new javax.swing.JMenuItem();
-        jMenuRecentGroundTruthCsv = new javax.swing.JMenu();
-        jMenuRecentSystemUnderTestCsv = new javax.swing.JMenu();
+        jMenuItemStartRecording = new javax.swing.JMenuItem();
+        jMenuItemStopRecording = new javax.swing.JMenuItem();
         jMenuConnections = new javax.swing.JMenu();
         jCheckBoxMenuItemOptitrack = new javax.swing.JCheckBoxMenuItem();
         jCheckBoxMenuItemAcceptGT = new javax.swing.JCheckBoxMenuItem();
@@ -639,6 +723,7 @@ public class HTPM_JFrame extends javax.swing.JFrame {
         jMenuItemConnectSUTServer = new javax.swing.JMenuItem();
         jMenuItemManageLiveConnections = new javax.swing.JMenuItem();
         jCheckBoxMenuItemPromptLogData = new javax.swing.JCheckBoxMenuItem();
+        jCheckBoxMenuItemPromptForTransforms = new javax.swing.JCheckBoxMenuItem();
         jMenu2 = new javax.swing.JMenu();
         jMenuItemROI = new javax.swing.JMenuItem();
         jMenuItemEditTimeProj = new javax.swing.JMenuItem();
@@ -648,6 +733,17 @@ public class HTPM_JFrame extends javax.swing.JFrame {
         jSeparator2 = new javax.swing.JPopupMenu.Separator();
         jCheckBoxMenuItemRepositionBackground = new javax.swing.JCheckBoxMenuItem();
         jCheckBoxMenuItemBackgroundGray = new javax.swing.JCheckBoxMenuItem();
+        jMenuDisplayCoords = new javax.swing.JMenu();
+        jRadioButtonMenuItemDisplayCoordXY = new javax.swing.JRadioButtonMenuItem();
+        jRadioButtonMenuItemDisplayCoordZY = new javax.swing.JRadioButtonMenuItem();
+        jRadioButtonMenuItemDisplayCoordXZ = new javax.swing.JRadioButtonMenuItem();
+        jMenuPanAndZoom = new javax.swing.JMenu();
+        jMenuItemZoomOut = new javax.swing.JMenuItem();
+        jMenuItemZoomIn = new javax.swing.JMenuItem();
+        jMenuItemPanLeft = new javax.swing.JMenuItem();
+        jMenuItemPanRight = new javax.swing.JMenuItem();
+        jMenuItemPanUp = new javax.swing.JMenuItem();
+        jMenuItemPanDown = new javax.swing.JMenuItem();
         jMenuItemFit = new javax.swing.JMenuItem();
         jCheckBoxMenuItemDebug = new javax.swing.JCheckBoxMenuItem();
         jMenuItemRandomColors = new javax.swing.JMenuItem();
@@ -661,6 +757,9 @@ public class HTPM_JFrame extends javax.swing.JFrame {
         jCheckBoxMenuItemGrayTracks = new javax.swing.JCheckBoxMenuItem();
         jMenuItemSetTrackTailHighlightTime = new javax.swing.JMenuItem();
         jCheckBoxMenuItemShowDisconnected = new javax.swing.JCheckBoxMenuItem();
+        jCheckBoxMenuItemShowFutureTracks = new javax.swing.JCheckBoxMenuItem();
+        jMenuItemSetConnectionLineCollor = new javax.swing.JMenuItem();
+        jMenuItemShow3DFx = new javax.swing.JMenuItem();
         jMenu7 = new javax.swing.JMenu();
         jMenuItemShowROCCurve = new javax.swing.JMenuItem();
         jMenuItemShowStatVTime = new javax.swing.JMenuItem();
@@ -671,6 +770,7 @@ public class HTPM_JFrame extends javax.swing.JFrame {
         jMenuItemComputeTimeOffset = new javax.swing.JMenuItem();
         jMenuItemShowComputedVelocities = new javax.swing.JMenuItem();
         jMenuItemComputeMinSUTRadius = new javax.swing.JMenuItem();
+        jMenuItemTransformFileSet = new javax.swing.JMenuItem();
         jMenu3 = new javax.swing.JMenu();
         jMenuItemGenRandom = new javax.swing.JMenuItem();
         jMenuMode = new javax.swing.JMenu();
@@ -728,9 +828,9 @@ public class HTPM_JFrame extends javax.swing.JFrame {
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setTitle("HumanTracking Performance Analysis");
-        addWindowListener(new java.awt.event.WindowAdapter() {
-            public void windowClosing(java.awt.event.WindowEvent evt) {
-                formWindowClosing(evt);
+        addMouseMotionListener(new java.awt.event.MouseMotionAdapter() {
+            public void mouseMoved(java.awt.event.MouseEvent evt) {
+                formMouseMoved(evt);
             }
         });
         addComponentListener(new java.awt.event.ComponentAdapter() {
@@ -741,6 +841,11 @@ public class HTPM_JFrame extends javax.swing.JFrame {
         addWindowStateListener(new java.awt.event.WindowStateListener() {
             public void windowStateChanged(java.awt.event.WindowEvent evt) {
                 formWindowStateChanged(evt);
+            }
+        });
+        addWindowListener(new java.awt.event.WindowAdapter() {
+            public void windowClosing(java.awt.event.WindowEvent evt) {
+                formWindowClosing(evt);
             }
         });
 
@@ -784,7 +889,7 @@ public class HTPM_JFrame extends javax.swing.JFrame {
         drawPanel1.setLayout(drawPanel1Layout);
         drawPanel1Layout.setHorizontalGroup(
             drawPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 1267, Short.MAX_VALUE)
+            .addGap(0, 1411, Short.MAX_VALUE)
         );
         drawPanel1Layout.setVerticalGroup(
             drawPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -803,7 +908,7 @@ public class HTPM_JFrame extends javax.swing.JFrame {
         );
         jPanel1Layout.setVerticalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jSplitPane1, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, 630, Short.MAX_VALUE)
+            .addComponent(jSplitPane1, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, 638, Short.MAX_VALUE)
         );
 
         jSliderTime.setMaximum(1000);
@@ -930,6 +1035,13 @@ public class HTPM_JFrame extends javax.swing.JFrame {
         });
         jToolBar1.add(jRadioButtonSelectTracks);
 
+        jCheckBoxRecording.setText("Recording");
+        jCheckBoxRecording.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jCheckBoxRecordingActionPerformed(evt);
+            }
+        });
+
         jMenu1.setText("File");
 
         jMenu8.setText("Settings");
@@ -958,7 +1070,38 @@ public class HTPM_JFrame extends javax.swing.JFrame {
         });
         jMenu8.add(jMenuItemResetSettings);
 
+        jMenuItemEditSettings.setText("Edit Settings ...");
+        jMenuItemEditSettings.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItemEditSettingsActionPerformed(evt);
+            }
+        });
+        jMenu8.add(jMenuItemEditSettings);
+
         jMenu1.add(jMenu8);
+
+        jMenuMatches.setText("Matches");
+
+        jMenuRecentMatchFiles.setText("Recent Match Files");
+        jMenuMatches.add(jMenuRecentMatchFiles);
+
+        jMenuItemFindMatches.setText("Find Matches (sets of files with overlapping timestamps )...");
+        jMenuItemFindMatches.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItemFindMatchesActionPerformed(evt);
+            }
+        });
+        jMenuMatches.add(jMenuItemFindMatches);
+
+        jMenuItemOpenMatchFile.setText("Open Match File ...");
+        jMenuItemOpenMatchFile.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItemOpenMatchFileActionPerformed(evt);
+            }
+        });
+        jMenuMatches.add(jMenuItemOpenMatchFile);
+
+        jMenu1.add(jMenuMatches);
 
         jMenuItemOpenGroundTruth.setText("Open Ground Truth CSV");
         jMenuItemOpenGroundTruth.addActionListener(new java.awt.event.ActionListener() {
@@ -968,6 +1111,9 @@ public class HTPM_JFrame extends javax.swing.JFrame {
         });
         jMenu1.add(jMenuItemOpenGroundTruth);
 
+        jMenuRecentGroundTruthCsv.setText("Recent Ground Truth CSV");
+        jMenu1.add(jMenuRecentGroundTruthCsv);
+
         jMenuItemOpenSutCsv.setText("Open System Under Test CSV");
         jMenuItemOpenSutCsv.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -976,6 +1122,9 @@ public class HTPM_JFrame extends javax.swing.JFrame {
         });
         jMenu1.add(jMenuItemOpenSutCsv);
         jMenu1.add(jSeparator1);
+
+        jMenuRecentSystemUnderTestCsv.setText("Recent System Under Test CSV");
+        jMenu1.add(jMenuRecentSystemUnderTestCsv);
 
         jMenuItemSaveGroundTruth.setText("Save Ground Truth CSV");
         jMenuItemSaveGroundTruth.addActionListener(new java.awt.event.ActionListener() {
@@ -1013,10 +1162,6 @@ public class HTPM_JFrame extends javax.swing.JFrame {
         });
         jMenu1.add(jCheckBoxMenuItemPlayAndMakeMovie);
 
-        jCheckBoxMenuItemRecordLive.setText("Record Live Data");
-        jCheckBoxMenuItemRecordLive.setEnabled(false);
-        jMenu1.add(jCheckBoxMenuItemRecordLive);
-
         jMenuItemSaveImages.setText("Save Image(s)");
         jMenuItemSaveImages.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -1049,11 +1194,23 @@ public class HTPM_JFrame extends javax.swing.JFrame {
         });
         jMenu1.add(jMenuItemClearData);
 
-        jMenuRecentGroundTruthCsv.setText("Recent Ground Truth CSV");
-        jMenu1.add(jMenuRecentGroundTruthCsv);
+        jMenuItemStartRecording.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_R, 0));
+        jMenuItemStartRecording.setText("Start Recording");
+        jMenuItemStartRecording.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItemStartRecordingActionPerformed(evt);
+            }
+        });
+        jMenu1.add(jMenuItemStartRecording);
 
-        jMenuRecentSystemUnderTestCsv.setText("Recent System Under Test CSV");
-        jMenu1.add(jMenuRecentSystemUnderTestCsv);
+        jMenuItemStopRecording.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_Q, 0));
+        jMenuItemStopRecording.setText("Stop Recording");
+        jMenuItemStopRecording.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItemStopRecordingActionPerformed(evt);
+            }
+        });
+        jMenu1.add(jMenuItemStopRecording);
 
         jMenuBar1.add(jMenu1);
 
@@ -1115,6 +1272,10 @@ public class HTPM_JFrame extends javax.swing.JFrame {
         });
         jMenuConnections.add(jCheckBoxMenuItemPromptLogData);
 
+        jCheckBoxMenuItemPromptForTransforms.setSelected(true);
+        jCheckBoxMenuItemPromptForTransforms.setText("Prompt for Transforms");
+        jMenuConnections.add(jCheckBoxMenuItemPromptForTransforms);
+
         jMenuBar1.add(jMenuConnections);
 
         jMenu2.setText("Edit");
@@ -1169,6 +1330,115 @@ public class HTPM_JFrame extends javax.swing.JFrame {
 
         jMenuView.add(jMenu6);
 
+        jMenuDisplayCoords.setText("Display Coordinates");
+
+        jRadioButtonMenuItemDisplayCoordXY.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_Z, java.awt.event.InputEvent.ALT_MASK | java.awt.event.InputEvent.CTRL_MASK));
+        buttonGroupDisplayCoord.add(jRadioButtonMenuItemDisplayCoordXY);
+        jRadioButtonMenuItemDisplayCoordXY.setSelected(true);
+        jRadioButtonMenuItemDisplayCoordXY.setText("XY");
+        jRadioButtonMenuItemDisplayCoordXY.addItemListener(new java.awt.event.ItemListener() {
+            public void itemStateChanged(java.awt.event.ItemEvent evt) {
+                jRadioButtonMenuItemDisplayCoordXYItemStateChanged(evt);
+            }
+        });
+        jRadioButtonMenuItemDisplayCoordXY.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jRadioButtonMenuItemDisplayCoordXYActionPerformed(evt);
+            }
+        });
+        jMenuDisplayCoords.add(jRadioButtonMenuItemDisplayCoordXY);
+
+        jRadioButtonMenuItemDisplayCoordZY.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_X, java.awt.event.InputEvent.ALT_MASK | java.awt.event.InputEvent.CTRL_MASK));
+        buttonGroupDisplayCoord.add(jRadioButtonMenuItemDisplayCoordZY);
+        jRadioButtonMenuItemDisplayCoordZY.setText("ZY");
+        jRadioButtonMenuItemDisplayCoordZY.addItemListener(new java.awt.event.ItemListener() {
+            public void itemStateChanged(java.awt.event.ItemEvent evt) {
+                jRadioButtonMenuItemDisplayCoordZYItemStateChanged(evt);
+            }
+        });
+        jRadioButtonMenuItemDisplayCoordZY.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jRadioButtonMenuItemDisplayCoordZYActionPerformed(evt);
+            }
+        });
+        jMenuDisplayCoords.add(jRadioButtonMenuItemDisplayCoordZY);
+
+        jRadioButtonMenuItemDisplayCoordXZ.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_Y, java.awt.event.InputEvent.ALT_MASK | java.awt.event.InputEvent.CTRL_MASK));
+        buttonGroupDisplayCoord.add(jRadioButtonMenuItemDisplayCoordXZ);
+        jRadioButtonMenuItemDisplayCoordXZ.setText("XZ");
+        jRadioButtonMenuItemDisplayCoordXZ.addItemListener(new java.awt.event.ItemListener() {
+            public void itemStateChanged(java.awt.event.ItemEvent evt) {
+                jRadioButtonMenuItemDisplayCoordXZItemStateChanged(evt);
+            }
+        });
+        jRadioButtonMenuItemDisplayCoordXZ.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jRadioButtonMenuItemDisplayCoordXZActionPerformed(evt);
+            }
+        });
+        jMenuDisplayCoords.add(jRadioButtonMenuItemDisplayCoordXZ);
+
+        jMenuView.add(jMenuDisplayCoords);
+
+        jMenuPanAndZoom.setText("Pan and ZOOM");
+
+        jMenuItemZoomOut.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_PAGE_UP, java.awt.event.InputEvent.ALT_MASK));
+        jMenuItemZoomOut.setText("Zoom Out");
+        jMenuItemZoomOut.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItemZoomOutActionPerformed(evt);
+            }
+        });
+        jMenuPanAndZoom.add(jMenuItemZoomOut);
+
+        jMenuItemZoomIn.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_PAGE_DOWN, java.awt.event.InputEvent.ALT_MASK));
+        jMenuItemZoomIn.setText("Zoom in");
+        jMenuItemZoomIn.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItemZoomInActionPerformed(evt);
+            }
+        });
+        jMenuPanAndZoom.add(jMenuItemZoomIn);
+
+        jMenuItemPanLeft.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_LEFT, java.awt.event.InputEvent.ALT_MASK));
+        jMenuItemPanLeft.setText("Pan Left");
+        jMenuItemPanLeft.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItemPanLeftActionPerformed(evt);
+            }
+        });
+        jMenuPanAndZoom.add(jMenuItemPanLeft);
+
+        jMenuItemPanRight.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_RIGHT, java.awt.event.InputEvent.ALT_MASK));
+        jMenuItemPanRight.setText("Pan Right");
+        jMenuItemPanRight.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItemPanRightActionPerformed(evt);
+            }
+        });
+        jMenuPanAndZoom.add(jMenuItemPanRight);
+
+        jMenuItemPanUp.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_UP, java.awt.event.InputEvent.ALT_MASK));
+        jMenuItemPanUp.setText("Pan Up");
+        jMenuItemPanUp.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItemPanUpActionPerformed(evt);
+            }
+        });
+        jMenuPanAndZoom.add(jMenuItemPanUp);
+
+        jMenuItemPanDown.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_DOWN, java.awt.event.InputEvent.ALT_MASK));
+        jMenuItemPanDown.setText("Pan Down");
+        jMenuItemPanDown.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItemPanDownActionPerformed(evt);
+            }
+        });
+        jMenuPanAndZoom.add(jMenuItemPanDown);
+
+        jMenuView.add(jMenuPanAndZoom);
+
+        jMenuItemFit.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_ENTER, java.awt.event.InputEvent.ALT_MASK | java.awt.event.InputEvent.CTRL_MASK));
         jMenuItemFit.setText("Fit");
         jMenuItemFit.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -1275,6 +1545,31 @@ public class HTPM_JFrame extends javax.swing.JFrame {
         });
         jMenuView.add(jCheckBoxMenuItemShowDisconnected);
 
+        jCheckBoxMenuItemShowFutureTracks.setSelected(true);
+        jCheckBoxMenuItemShowFutureTracks.setText("Show Future Tracks");
+        jCheckBoxMenuItemShowFutureTracks.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jCheckBoxMenuItemShowFutureTracksActionPerformed(evt);
+            }
+        });
+        jMenuView.add(jCheckBoxMenuItemShowFutureTracks);
+
+        jMenuItemSetConnectionLineCollor.setText("Set Seletcted Tracks Connection Line Color ...");
+        jMenuItemSetConnectionLineCollor.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItemSetConnectionLineCollorActionPerformed(evt);
+            }
+        });
+        jMenuView.add(jMenuItemSetConnectionLineCollor);
+
+        jMenuItemShow3DFx.setText("Show 3-D");
+        jMenuItemShow3DFx.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItemShow3DFxActionPerformed(evt);
+            }
+        });
+        jMenuView.add(jMenuItemShow3DFx);
+
         jMenuBar1.add(jMenuView);
 
         jMenu7.setText("Calculations");
@@ -1355,6 +1650,14 @@ public class HTPM_JFrame extends javax.swing.JFrame {
             }
         });
         jMenu7.add(jMenuItemComputeMinSUTRadius);
+
+        jMenuItemTransformFileSet.setText("Transform Set of Files ...");
+        jMenuItemTransformFileSet.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItemTransformFileSetActionPerformed(evt);
+            }
+        });
+        jMenu7.add(jMenuItemTransformFileSet);
 
         jMenuBar1.add(jMenu7);
 
@@ -1491,6 +1794,8 @@ public class HTPM_JFrame extends javax.swing.JFrame {
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                             .addGroup(layout.createSequentialGroup()
+                                .addComponent(jCheckBoxRecording)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                                 .addComponent(jCheckBoxLive)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                                 .addComponent(jLabelTime)
@@ -1512,11 +1817,11 @@ public class HTPM_JFrame extends javax.swing.JFrame {
                                 .addComponent(jLabel5)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                                 .addComponent(jTextFieldGTRadius, javax.swing.GroupLayout.PREFERRED_SIZE, 79, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addGap(4, 4, 4)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                                 .addComponent(jLabel6)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                                 .addComponent(jTextFieldSUTRadius, javax.swing.GroupLayout.PREFERRED_SIZE, 79, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 82, Short.MAX_VALUE))))
+                                .addGap(0, 130, Short.MAX_VALUE))))
                     .addComponent(jToolBar1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                 .addContainerGap())
         );
@@ -1527,35 +1832,36 @@ public class HTPM_JFrame extends javax.swing.JFrame {
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                 .addGap(18, 18, 18)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                        .addComponent(jSliderTime, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                        .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
-                                            .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                                                .addComponent(jLabelTime)
-                                                .addComponent(jCheckBoxLive))
-                                            .addContainerGap()))
-                                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
-                                        .addComponent(jLabel3)
-                                        .addContainerGap()))
-                                .addComponent(jSliderConfidence, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
-                                .addComponent(jLabel2)
-                                .addContainerGap()))
-                        .addComponent(jSliderZoom, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                            .addComponent(jLabel4)
-                            .addComponent(jTextFieldGrid, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(jLabel5)
-                            .addComponent(jTextFieldGTRadius, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(jTextFieldSUTRadius, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(jLabel6))
-                        .addContainerGap())))
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                            .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                                    .addGroup(layout.createSequentialGroup()
+                                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                            .addGroup(layout.createSequentialGroup()
+                                                .addGap(18, 18, 18)
+                                                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                                                    .addComponent(jLabelTime)
+                                                    .addComponent(jCheckBoxLive)
+                                                    .addComponent(jCheckBoxRecording)))
+                                            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                                                .addComponent(jLabel4)
+                                                .addComponent(jTextFieldGrid, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                                .addComponent(jLabel5)
+                                                .addComponent(jTextFieldGTRadius, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                                .addComponent(jTextFieldSUTRadius, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                                .addComponent(jLabel6)))
+                                        .addContainerGap())
+                                    .addComponent(jSliderTime, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+                                    .addComponent(jLabel3)
+                                    .addContainerGap()))
+                            .addComponent(jSliderConfidence, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+                            .addComponent(jLabel2)
+                            .addContainerGap()))
+                    .addComponent(jSliderZoom, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
         );
 
         pack();
@@ -1643,8 +1949,99 @@ public class HTPM_JFrame extends javax.swing.JFrame {
      * @param filename name of file to read
      */
     public static void LoadGroundTruthFile(String filename, CsvParseOptions o) {
-        gtlist = LoadFile(filename, Color.red, true, o);
+        if (null == gtlist) {
+            gtlist = LoadFile(filename, Color.red, true, o);
+        } else {
+            List<Track> list_to_add = LoadFile(filename, Color.red,
+                    true, o);
+            gtlist.addAll(list_to_add);
+        }
         recomputeTimeLimits();
+    }
+
+    public static String delim = CsvParseOptions.DEFAULT.delim;
+
+    /**
+     * Read a csv file and treat it as ground-truth data.
+     *
+     * @param filename name of file to read
+     */
+    public static void CopyAndProcessTrackCsv(String filename_in, String filename_out) {
+        CsvParseOptions o = CsvParseOptionsJPanel.optionsFromFileHeadings(CsvParseOptions.DEFAULT,
+                new File(filename_in), delim);
+        ArrayList<Track> tracks = null;
+        BufferedReader br = null;
+        PrintStream ps = null;
+        try {
+            tracks = new ArrayList<Track>();
+            br = new BufferedReader(new FileReader(filename_in));
+            File outFile = new File(filename_out);
+            if (!outFile.getParentFile().exists()) {
+                outFile.getParentFile().mkdirs();
+            }
+            ps = new PrintStream(new FileOutputStream(outFile));
+            printCsvHeader(ps);
+            br.readLine(); // skip line with headings
+            int line_num = 2;
+            String line = br.readLine();
+            while (line != null) {
+                line = line.trim();
+                if (line.length() < 1) {
+                    line = br.readLine();
+                    continue;
+                }
+                try {
+                    TrackPoint pt = parseTrackPointLine(line, o);
+                    if (null != pt) {
+//                        HTPM_JFrame.AddTrackPointToTracks(tracks,
+//                                pt,
+//                                true, filename_in, Color.RED, false,
+//                                line_num,
+//                                (o.VX_INDEX > 0 || o.VY_INDEX > 0),
+//                                o);
+                        Track t = HTPM_JFrame.FindCurTrack(tracks, pt, true, filename_in, Color.red, false);
+                        printOneLine(pt, t.name, ps);
+                    }
+                } catch (Exception e) {
+                    System.err.println("Error parsing line " + line_num + " from " + filename_in);
+                    System.err.println(line);
+                    e.printStackTrace();
+                }
+                line = br.readLine();
+                line_num++;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                if (null != ps) {
+                    ps.close();
+                }
+            } catch (Exception e) {
+            }
+            try {
+                if (null != br) {
+                    br.close();
+                }
+            } catch (Exception e) {
+            }
+        }
+    }
+
+    /**
+     * Read a csv file and treat it as ground-truth data.
+     *
+     * @param filename name of file to read
+     */
+    public static void LoadGroundTruthFile(String filename) {
+        File f = new File(filename);
+        if (!f.exists()) {
+            System.err.println("LoadGroundTruthFile(): " + filename + " does not exist.");
+            return;
+        }
+        CsvParseOptions o = CsvParseOptionsJPanel.optionsFromFileHeadings(CsvParseOptions.DEFAULT.clone(),
+                f, delim);
+        LoadGroundTruthFile(filename, o);
     }
 
     /**
@@ -1656,6 +2053,22 @@ public class HTPM_JFrame extends javax.swing.JFrame {
         sutlist = LoadFile(filename, Color.blue, false, o);
         recomputeTimeLimits();
     }
+
+    /**
+     * Read a csv file and treat it as system under test data.
+     *
+     * @param filename name of file to read
+     */
+    public static void LoadSystemUnderTestFile(String filename) {
+        File f = new File(filename);
+        if (!f.exists()) {
+            System.err.println("LoadSystemUnderTestFile(): " + filename + " does not exist.");
+            return;
+        }
+        CsvParseOptions o = CsvParseOptionsJPanel.optionsFromFileHeadings(new CsvParseOptions(), f, delim);
+        LoadSystemUnderTestFile(filename, o);
+    }
+
     private String groundTruthFileName = null;
 
     public JMenuItem createRecentFileMenuItem(final CsvParseOptions o,
@@ -1806,8 +2219,8 @@ public class HTPM_JFrame extends javax.swing.JFrame {
         DefaultMutableTreeNode gt_top_child = null;
         Enumeration children_e = top.children();
         while (children_e.hasMoreElements()) {
-            DefaultMutableTreeNode child =
-                    (DefaultMutableTreeNode) children_e.nextElement();
+            DefaultMutableTreeNode child
+                    = (DefaultMutableTreeNode) children_e.nextElement();
             if (child.getUserObject().toString().compareTo("Ground-Truth") == 0) {
                 gt_top_child = child;
                 break;
@@ -1821,8 +2234,8 @@ public class HTPM_JFrame extends javax.swing.JFrame {
         DefaultMutableTreeNode sut_top_child = null;
         children_e = top.children();
         while (children_e.hasMoreElements()) {
-            DefaultMutableTreeNode child =
-                    (DefaultMutableTreeNode) children_e.nextElement();
+            DefaultMutableTreeNode child
+                    = (DefaultMutableTreeNode) children_e.nextElement();
             if (child.getUserObject().toString().compareTo("System-Under-Test") == 0) {
                 sut_top_child = child;
                 break;
@@ -1899,6 +2312,9 @@ public class HTPM_JFrame extends javax.swing.JFrame {
 
     public final void setCurrentTime(double time) {
         setCurrentTime(time, true);
+        if (null != fxviewer) {
+            this.fxviewer.updateTrackLists();
+        }
     }
 
     /**
@@ -1912,6 +2328,9 @@ public class HTPM_JFrame extends javax.swing.JFrame {
                 return;
             }
             setTracksCurrentTimes(time);
+            if (null != fxviewer) {
+                this.fxviewer.updateTrackLists();
+            }
             boolean save_images = this.jCheckBoxMenuItemSaveImages.isSelected();
             if (save_images) {
                 updateStats(true);
@@ -1946,6 +2365,7 @@ public class HTPM_JFrame extends javax.swing.JFrame {
         }
         return count;
     }
+
     /**
      * List of FrameStats accumulated while processing an entire period of time
      * for an experiment.
@@ -1962,12 +2382,109 @@ public class HTPM_JFrame extends javax.swing.JFrame {
         }
         int img_w = (int) ((s.roi_x_max - s.roi_x_min) * HTPM_JFrame.s.scale);
         int img_h = (int) ((s.roi_y_max - s.roi_y_min) * HTPM_JFrame.s.scale);
-        BufferedImage bi =
-                new BufferedImage(img_w, img_h, BufferedImage.TYPE_BYTE_GRAY);
+        BufferedImage bi
+                = new BufferedImage(img_w, img_h, BufferedImage.TYPE_BYTE_GRAY);
         if (HTPM_JFrame.update_stat_keep_image) {
             HTPM_JFrame.update_stat_image = bi;
         }
         return bi;
+    }
+
+    public static double medianTimeOffset(String gtfilename, String sutfilename) {
+        HTPM_JFrame.LoadGroundTruthFile(gtfilename);
+        HTPM_JFrame.LoadSystemUnderTestFile(sutfilename);
+        HTPM_JFrame.recomputeTimeLimits();
+        LinkedList<Double> lto = new LinkedList<>();
+        for (double t = inner_min_time; t <= inner_max_time; t += s.time_inc) {
+            setTracksCurrentTimes(t);
+            int num_gt_points = 0;
+            for (int j = 0; j < gtlist.size(); j++) {
+                Track gtTrack = gtlist.get(j);
+                gtTrack.setCurrentTime(t);
+                TrackPoint gtPoint = gtTrack.currentPoint;
+                if (null != gtPoint) {
+                    num_gt_points++;
+                }
+            }
+            if (num_gt_points < 1) {
+                continue;
+            }
+            double to = computeCurrentTimeOffset(t);
+            if (!Double.isNaN(t) && !Double.isInfinite(t)) {
+                lto.add(to);
+            }
+        }
+        Collections.sort(lto);
+        return lto.get(lto.size() / 2);
+    }
+
+    public static double computeErr(double curTime, double offset) {
+        int num_dists = 0;
+        double total_dists = 0.0;
+        for (int i = 0; i < sutlist.size(); i++) {
+            Track sutTrack = sutlist.get(i);
+            sutTrack.setCurrentTime(curTime + offset);
+            TrackPoint sutPoint = sutTrack.currentPoint;
+            if (null == sutPoint) {
+                continue;
+            }
+            double min_dist = Double.POSITIVE_INFINITY;
+            for (int j = 0; j < gtlist.size(); j++) {
+                Track gtTrack = gtlist.get(j);
+                TrackPoint gtPoint = gtTrack.currentPoint;
+                if (null != gtPoint && null != sutPoint) {
+                    double dist = gtPoint.distance(sutPoint);
+                    if (dist < min_dist) {
+                        min_dist = dist;
+                    }
+                }
+                if (min_dist < 0.2) {
+                    num_dists++;
+                    total_dists += min_dist;
+                }
+            }
+        }
+        if (num_dists <= 0) {
+            return Double.POSITIVE_INFINITY;
+        }
+        return total_dists / num_dists;
+    }
+
+    public static double computeCurrentTimeOffset(double curTime) {
+
+        double min_error = Double.POSITIVE_INFINITY;
+        double min_offset = 0.0;
+        LinkedList<Double> errs = new LinkedList<>();
+        for (double offset = -0.5; offset <= 0.5; offset += 0.001) {
+            double error = computeErr(curTime, offset);
+            errs.add(error);
+            if (min_error > error) {
+                min_error = error;
+                min_offset = offset;
+            }
+        }
+        double zerr = computeErr(curTime, 0.0);
+        if (Double.isInfinite(zerr) || Double.isNaN(zerr) || Double.isInfinite(min_error) || Double.isNaN(min_error)) {
+            return Double.NaN;
+        }
+        if (zerr - min_error < 0.0001) {
+            return 0.0;
+        }
+        PrintStream ps = null;
+        try {
+            ps = new PrintStream(new FileOutputStream("/tmp/timeoffset.csv", true));
+            PrintCsvLine(ps, curTime, min_offset, min_error, zerr, (zerr - min_error), errs.toString());
+        } catch (Exception e) {
+
+        } finally {
+            if (null != ps) {
+                try {
+                    ps.close();
+                } catch (Exception e) {
+                };
+            }
+        }
+        return min_offset;
     }
 
     /**
@@ -2201,8 +2718,11 @@ public class HTPM_JFrame extends javax.swing.JFrame {
     }//GEN-LAST:event_formWindowStateChanged
     private Thread playThread = null;
     private boolean playing_back = false;
+    public boolean exit_on_end_playback = false;
 
-    private void stopPlayAll() {
+    Runnable stopPlayRunnable = null;
+
+    private void stopPlayAll(boolean starting) {
         try {
             play_thread_interupt_flag = true;
             try {
@@ -2219,6 +2739,15 @@ public class HTPM_JFrame extends javax.swing.JFrame {
             this.jCheckBoxMenuItemPlay.setSelected(false);
             this.jCheckBoxMenuItemPlayAndMakeMovie.setSelected(false);
             this.jSliderTime.setEnabled(true);
+            if (starting) {
+                return;
+            }
+            if (null != stopPlayRunnable) {
+                stopPlayRunnable.run();
+            }
+            if (exit_on_end_playback) {
+                System.exit(0);
+            }
         } catch (Exception exception) {
             exception.printStackTrace();
         }
@@ -2227,11 +2756,11 @@ public class HTPM_JFrame extends javax.swing.JFrame {
     public static boolean play_thread_interupt_flag = false;
 
     private void startPlayAll() {
-        boolean orig_jCheckBoxMenuItemPlay =
-                jCheckBoxMenuItemPlay.isSelected();
-        boolean orig_jCheckBoxMenuItemPlayAndMakeMovie =
-                this.jCheckBoxMenuItemPlayAndMakeMovie.isSelected();
-        stopPlayAll();
+        boolean orig_jCheckBoxMenuItemPlay
+                = jCheckBoxMenuItemPlay.isSelected();
+        boolean orig_jCheckBoxMenuItemPlayAndMakeMovie
+                = this.jCheckBoxMenuItemPlayAndMakeMovie.isSelected();
+        stopPlayAll(true);
         this.jCheckBoxMenuItemPlay.setSelected(orig_jCheckBoxMenuItemPlay);
         this.jCheckBoxMenuItemPlayAndMakeMovie.setSelected(orig_jCheckBoxMenuItemPlayAndMakeMovie);
         this.jSliderTime.setEnabled(false);
@@ -2266,8 +2795,8 @@ public class HTPM_JFrame extends javax.swing.JFrame {
                                 if (!playing_back) {
                                     return;
                                 }
-                                int slider_v =
-                                        (int) (((t2 - inner_min_time)
+                                int slider_v
+                                        = (int) (((t2 - inner_min_time)
                                         / (inner_max_time - inner_min_time)
                                         * (jSliderTime.getMaximum() - jSliderTime.getMinimum()))
                                         + jSliderTime.getMinimum());
@@ -2295,7 +2824,7 @@ public class HTPM_JFrame extends javax.swing.JFrame {
                 playThread = null;
                 playing_back = false;
                 drawPanel1.closeMovie();
-                stopPlayAll();
+                stopPlayAll(false);
             }
         });
         play_thread_interupt_flag = false;
@@ -2387,10 +2916,10 @@ public class HTPM_JFrame extends javax.swing.JFrame {
             combined_fs.sut_human_count = 1;
         }
 
-        combined_fs.avg_gt_to_sut_dist =
-                combined_fs.total_gt_to_sut_dist / combined_fs.gt_human_count;
-        combined_fs.avg_sut_to_gt_dist =
-                combined_fs.total_sut_to_gt_dist / combined_fs.sut_human_count;
+        combined_fs.avg_gt_to_sut_dist
+                = combined_fs.total_gt_to_sut_dist / combined_fs.gt_human_count;
+        combined_fs.avg_sut_to_gt_dist
+                = combined_fs.total_sut_to_gt_dist / combined_fs.sut_human_count;
         if (null != ps) {
             ps.close();
         }
@@ -2399,9 +2928,161 @@ public class HTPM_JFrame extends javax.swing.JFrame {
         return combined_fs;
     }
 
+    static public void PrintCsvLine(PrintStream ps, Object... obs) {
+        for (int i = 0; i < obs.length - 1; i++) {
+            if (null == obs[i]) {
+                ps.println("?,");
+            }
+            ps.print(obs[i] + ",");
+        }
+        ps.println(obs[obs.length - 1]);
+    }
+
+    private static double distCurrPoint(Track track, TrackPoint tp) {
+        double dcurrent = Double.POSITIVE_INFINITY;
+        double dnext = Double.POSITIVE_INFINITY;
+        double dprev = Double.POSITIVE_INFINITY;
+        if (track.cur_time_index > 0 && track.cur_time_index < track.data.size()) {
+            dcurrent = track.data.get(track.cur_time_index).distance(tp);
+        }
+        if (track.cur_time_index + 1 > 0 && track.cur_time_index + 1 < track.data.size()) {
+            dnext = track.data.get(track.cur_time_index + 1).distance(tp);
+        }
+        if (track.cur_time_index - 1 > 0 && track.cur_time_index - 1 < track.data.size()) {
+            dprev = track.data.get(track.cur_time_index - 1).distance(tp);
+        }
+        return Math.min(dcurrent, Math.min(dnext, dprev));
+    }
+
+    /**
+     * Process an entire experiment or time period.
+     *
+     * @return
+     */
+//    public static void transform(File transformFile, File outFile) {
+//        PrintStream ps = null;
+//        try {
+//            ps = new PrintStream(new FileOutputStream(outFile));
+//
+//            ps.println("timestamp,personID,personcentroidX,personcentroidY,personcentroidZ,boundingboxtopcenterX,boundingboxtopcenterY,boundingboxtopcenterZ,Xvelocity,Yvelocity,Zvelocity,ROIwidth,ROIheight,confidence,radius,distPt,");
+//
+//            for (double t = inner_min_time; t <= inner_max_time; t += s.time_inc) {
+//                setTracksCurrentTimes(t);
+//                if (null != HTPM_JFrame.gtlist) {
+//                    for (Track track : HTPM_JFrame.gtlist) {
+//                        TrackPoint tp = track.currentPoint;
+//                        if (null == tp) {
+//                            continue;
+//                        }
+//
+//                        //ps.println("timestamp,personID,personcentroidX,personcentroidY,personcentroidZ,boundingboxtopcenterX,boundingboxtopcenterY,boundingboxtopcenterZ,Xvelocity,Yvelocity,Zvelocity,ROIwidth,ROIheight,confidence,radius");
+//                        PrintCsvLine(ps, t, track.name, tp.x, tp.y, tp.z, tp.x, tp.y, tp.z, tp.vel_x, tp.vel_y, tp.vel_z, tp.ROI_width, tp.ROI_height, tp.confidence, tp.radius,
+//                                distCurrPoint(track, tp));
+//                    }
+//                }
+//                if (null != HTPM_JFrame.sutlist) {
+//                    for (Track track : HTPM_JFrame.sutlist) {
+//                        TrackPoint tp = track.currentPoint;
+//                        if (null == tp) {
+//                            continue;
+//                        }
+//                        //ps.println("timestamp,personID,personcentroidX,personcentroidY,personcentroidZ,boundingboxtopcenterX,boundingboxtopcenterY,boundingboxtopcenterZ,Xvelocity,Yvelocity,Zvelocity,ROIwidth,ROIheight,confidence,radius");
+//                        PrintCsvLine(ps, t, track.name, tp.x, tp.y, tp.z, tp.x, tp.y, tp.z, tp.computed_vel_x, tp.computed_vel_y, tp.computed_vel_z, tp.ROI_width, tp.ROI_height, tp.confidence, tp.radius,
+//                                distCurrPoint(track, tp));
+//                    }
+//                }
+//            }
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//        }
+//        if (null != ps) {
+//            ps.close();
+//        }
+//    }
+
+    static public void loadDefaultTransform(File f) {
+        CsvParseOptions.DEFAULT.transform = loadTransformFile(f);
+    }
+
+    static public double[] loadTransformFile(File transformFile) {
+        double transform[] = new double[16];
+        BufferedReader br = null;
+        try {
+            br = new BufferedReader(new FileReader(transformFile));
+            int i = 0;
+            String line;
+            while ((line = br.readLine()) != null && i < 4) {
+                String fields[] = line.split("[, \t]+");
+                if (fields.length < 2) {
+                    continue;
+                }
+                for (int j = 0; j < fields.length && j < 4; j++) {
+                    transform[i * 4 + j] = Double.valueOf(fields[j]);
+                }
+                i++;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                if (null != br) {
+                    br.close();
+                }
+            } catch (Exception e) {
+            }
+        }
+        return transform;
+    }
+
+    /**
+     * Process an entire experiment or time period.
+     *
+     * @return
+     */
+    public static void interpolate(File outFile) {
+        PrintStream ps = null;
+        try {
+            ps = new PrintStream(new FileOutputStream(outFile));
+
+            ps.println("timestamp,personID,personcentroidX,personcentroidY,personcentroidZ,boundingboxtopcenterX,boundingboxtopcenterY,boundingboxtopcenterZ,Xvelocity,Yvelocity,Zvelocity,ROIwidth,ROIheight,confidence,radius,distPt,");
+
+            for (double t = inner_min_time; t <= inner_max_time; t += s.time_inc) {
+                setTracksCurrentTimes(t);
+                if (null != HTPM_JFrame.gtlist) {
+                    for (Track track : HTPM_JFrame.gtlist) {
+                        TrackPoint tp = track.currentPoint;
+                        if (null == tp) {
+                            continue;
+                        }
+
+                        //ps.println("timestamp,personID,personcentroidX,personcentroidY,personcentroidZ,boundingboxtopcenterX,boundingboxtopcenterY,boundingboxtopcenterZ,Xvelocity,Yvelocity,Zvelocity,ROIwidth,ROIheight,confidence,radius");
+                        PrintCsvLine(ps, t, track.name, tp.x, tp.y, tp.z, tp.x, tp.y, tp.z, tp.vel_x, tp.vel_y, tp.vel_z, tp.ROI_width, tp.ROI_height, tp.confidence, tp.radius,
+                                distCurrPoint(track, tp));
+                    }
+                }
+                if (null != HTPM_JFrame.sutlist) {
+                    for (Track track : HTPM_JFrame.sutlist) {
+                        TrackPoint tp = track.currentPoint;
+                        if (null == tp) {
+                            continue;
+                        }
+                        //ps.println("timestamp,personID,personcentroidX,personcentroidY,personcentroidZ,boundingboxtopcenterX,boundingboxtopcenterY,boundingboxtopcenterZ,Xvelocity,Yvelocity,Zvelocity,ROIwidth,ROIheight,confidence,radius");
+                        PrintCsvLine(ps, t, track.name, tp.x, tp.y, tp.z, tp.x, tp.y, tp.z, tp.computed_vel_x, tp.computed_vel_y, tp.computed_vel_z, tp.ROI_width, tp.ROI_height, tp.confidence, tp.radius,
+                                distCurrPoint(track, tp));
+                    }
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        if (null != ps) {
+            ps.close();
+        }
+    }
+
     private void jSliderConfidenceStateChanged(javax.swing.event.ChangeEvent evt) {//GEN-FIRST:event_jSliderConfidenceStateChanged
-        double slider_range =
-                this.jSliderConfidence.getMaximum() - this.jSliderConfidence.getMinimum();
+        double slider_range
+                = this.jSliderConfidence.getMaximum() - this.jSliderConfidence.getMinimum();
         if (slider_range < Double.MIN_NORMAL) {
             return;
         }
@@ -2504,14 +3185,16 @@ public class HTPM_JFrame extends javax.swing.JFrame {
             Track t = (Track) o;
             t.selected = true;
             if (t.is_groundtruth) {
-                t.color = Color.orange;
+                t.pointColor = Color.orange;
+                t.lineColor = Color.orange;
             } else {
-                t.color = Color.magenta;
+                t.pointColor = Color.magenta;
+                t.lineColor = Color.magenta;
             }
         }
         for (int ci = 0; ci < node.getChildCount(); ci++) {
-            DefaultMutableTreeNode child =
-                    (DefaultMutableTreeNode) node.getChildAt(ci);
+            DefaultMutableTreeNode child
+                    = (DefaultMutableTreeNode) node.getChildAt(ci);
             markTreeChildrenSelected(child);
         }
     }
@@ -2521,10 +3204,15 @@ public class HTPM_JFrame extends javax.swing.JFrame {
                 if (!t.selected) {
                     continue;
                 }
-                if (null != t.explicit_color) {
-                    t.color = t.explicit_color;
+                if (null != t.explicitLineColor) {
+                    t.lineColor = t.explicitLineColor;
                 } else {
-                    t.color = Color.RED;
+                    t.lineColor = Color.RED;
+                }
+                if (null != t.explicitPointColor) {
+                    t.pointColor = t.explicitPointColor;
+                } else {
+                    t.pointColor = Color.RED;
                 }
                 t.selected = false;
             }
@@ -2534,10 +3222,15 @@ public class HTPM_JFrame extends javax.swing.JFrame {
                 if (!t.selected) {
                     continue;
                 }
-                if (null != t.explicit_color) {
-                    t.color = t.explicit_color;
+                if (null != t.explicitLineColor) {
+                    t.lineColor = t.explicitLineColor;
                 } else {
-                    t.color = Color.BLUE;
+                    t.lineColor = Color.BLUE;
+                }
+                if (null != t.explicitPointColor) {
+                    t.pointColor = t.explicitPointColor;
+                } else {
+                    t.pointColor = Color.BLUE;
                 }
                 t.selected = false;
             }
@@ -2552,8 +3245,8 @@ public class HTPM_JFrame extends javax.swing.JFrame {
             if (tp.getPath().length < 3) {
                 continue;
             }
-            DefaultMutableTreeNode node =
-                    (DefaultMutableTreeNode) tp.getLastPathComponent();
+            DefaultMutableTreeNode node
+                    = (DefaultMutableTreeNode) tp.getLastPathComponent();
             markTreeChildrenSelected(node);
         }
         this.combineTracks();
@@ -2572,7 +3265,7 @@ public class HTPM_JFrame extends javax.swing.JFrame {
             }
             this.startPlayAll();
         } else {
-            this.stopPlayAll();
+            this.stopPlayAll(false);
         }
     }//GEN-LAST:event_jCheckBoxMenuItemPlayActionPerformed
     private boolean make_movie = false;
@@ -2618,12 +3311,24 @@ public class HTPM_JFrame extends javax.swing.JFrame {
         s.zoom_v = this.jSliderZoom.getValue();
         s.gt_on_top = this.jCheckBoxMenuItemGtOnTop.isSelected();
         s.use_gray_tracks = this.jCheckBoxMenuItemGrayTracks.isSelected();
+        s.displayCoordType = this.drawPanel1.getDisplayCoordType().toString();
+        s.show_disconnected_points = this.jCheckBoxMenuItemShowDisconnected.isSelected();
     }
 
     private void formWindowClosing(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowClosing
         this.currentValsToSettings();
         saveSettings(s, settings_file);
     }//GEN-LAST:event_formWindowClosing
+
+    public void playAndMakeMovie(int frame_split_count, String movie_filename, int fps) {
+        this.make_movie = false;
+        DrawPanel.max_frame_count = frame_split_count;
+        this.drawPanel1.movie_filename = movie_filename;
+        this.drawPanel1.setMovie_frames_per_second(fps);
+        this.jCheckBoxMenuItemPlayAndMakeMovie.setSelected(true);
+        this.make_movie = true;
+        this.startPlayAll();
+    }
 
     private void jCheckBoxMenuItemPlayAndMakeMovieActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jCheckBoxMenuItemPlayAndMakeMovieActionPerformed
         if (this.jCheckBoxMenuItemPlayAndMakeMovie.isSelected()) {
@@ -2663,10 +3368,11 @@ public class HTPM_JFrame extends javax.swing.JFrame {
             }
             this.startPlayAll();
         } else {
-            this.stopPlayAll();
+            this.stopPlayAll(false);
             this.make_movie = false;
         }
     }//GEN-LAST:event_jCheckBoxMenuItemPlayAndMakeMovieActionPerformed
+
     public OptitrackUDPStream ods = null;
     private List<Track> optitrack_tracks = null;
     static final Point2D zero2d = new Point2D.Float(0f, 0f);
@@ -2705,6 +3411,11 @@ public class HTPM_JFrame extends javax.swing.JFrame {
             optitrack_track.source = "optitrack";
             optitrack_track.name = Integer.toString(rb.ID);
             optitrack_track.is_groundtruth = this.optitrack_is_ground_truth;
+            if (this.optitrack_is_ground_truth) {
+                optitrack_track.setInterpolatonMethod(s.gtInterpMethod);
+            } else {
+                optitrack_track.setInterpolatonMethod(s.sutInterpMethod);
+            }
             optitrack_tracks.add(optitrack_track);
             if (this.optitrack_is_ground_truth) {
                 if (null == gtlist) {
@@ -2742,7 +3453,8 @@ public class HTPM_JFrame extends javax.swing.JFrame {
         optitrack_track.selected = true;
 
         optitrack_track.currentPoint = tp;
-        optitrack_track.color = Color.RED;
+        optitrack_track.pointColor = Color.RED;
+        optitrack_track.lineColor = Color.RED;
         if (null == optitrack_track.data) {
             optitrack_track.data = new ArrayList<TrackPoint>();
         }
@@ -2827,7 +3539,7 @@ public class HTPM_JFrame extends javax.swing.JFrame {
             try {
                 point_updated = point_updated
                         || this.UpdateOptitrackRigidBody(rb,
-                        this.optitrack_print_stream);
+                                this.optitrack_print_stream);
             } catch (Exception ex) {
                 ods.close();
                 ods = null;
@@ -2863,15 +3575,25 @@ public class HTPM_JFrame extends javax.swing.JFrame {
     }
     private PrintStream optitrack_print_stream = null;
 
-    public String dateString() {
-        GregorianCalendar c = new GregorianCalendar();
+    public static String dateString(Calendar c) {
         return "" + c.get(Calendar.YEAR) + "-"
-                + c.get(Calendar.MONTH) + "-"
+                + c.getDisplayName(Calendar.MONTH, Calendar.SHORT, Locale.US) + "-"
                 + c.get(Calendar.DAY_OF_MONTH)
                 + "_" + String.format("%02d", c.get(Calendar.HOUR_OF_DAY))
                 + "_" + String.format("%02d", c.get(Calendar.MINUTE))
                 + "_" + String.format("%02d", c.get(Calendar.SECOND))
                 + "." + String.format("%03d", c.get(Calendar.MILLISECOND));
+    }
+
+    public static String dateString() {
+        GregorianCalendar c = new GregorianCalendar();
+        return dateString(c);
+    }
+
+    public static String dateString(double dt) {
+        GregorianCalendar c = new GregorianCalendar();
+        c.setTimeInMillis(((long) (dt * 1e3)));
+        return dateString(c);
     }
 
     public void startRecording() {
@@ -2901,74 +3623,100 @@ public class HTPM_JFrame extends javax.swing.JFrame {
                 s.save_file_dir = f.getParentFile().getCanonicalPath();
                 this.optitrack_print_stream = new PrintStream(new FileOutputStream(f));
                 printCsvHeader(this.optitrack_print_stream);
-                this.jCheckBoxMenuItemRecordLive.setSelected(true);
+                this.jCheckBoxRecording.setSelected(true);
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
+    public void startRecordingWFile(final String filename) {
+
+        try {
+            stopRecording();
+            File f = new File(filename);
+            this.optitrack_print_stream = new PrintStream(new FileOutputStream(f));
+            printCsvHeader(this.optitrack_print_stream);
+            this.jCheckBoxRecording.setSelected(true);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
     public void stopRecording() {
-        this.jCheckBoxMenuItemRecordLive.setSelected(false);
+        this.jCheckBoxRecording.setSelected(false);
         if (null != optitrack_print_stream) {
             optitrack_print_stream.close();
             optitrack_print_stream = null;
         }
     }
 
+    public boolean ConnectToOptitrack(final String server, final boolean use_multicast) {
+        ods = new OptitrackUDPStream(server, use_multicast);
+        ods.transform_filename = s.optitrack_trasform_filename;
+        if (this.jCheckBoxMenuItemPromptForTransforms.isSelected()) {
+            TransformMatrixJPanel.showDialog(this, ods);
+        }
+        s.optitrack_trasform_filename = ods.transform_filename;
+        if (!ods.try_ping(1, 1000)) {
+            int o = JOptionPane.showConfirmDialog(this,
+                    "No response to ping from optitrack. Continue?");
+            if (o != JOptionPane.YES_OPTION) {
+                ods.close();
+                ods = null;
+                return false;
+            }
+        }
+        s.optitrack_host = server;
+        ods.addListener(new ActionListener() {
+            int action_count = 0;
+
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (action_count < 2) {
+                    s.optitrack_host = server;
+                    s.optitrack_trasform_filename = ods.transform_filename;
+                }
+                action_count++;
+                UpdateOptitrackData();
+            }
+        });
+        return true;
+    }
     private void jCheckBoxMenuItemOptitrackActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jCheckBoxMenuItemOptitrackActionPerformed
         if (ods != null) {
             ods.close();
             ods = null;
-            this.jCheckBoxMenuItemRecordLive.setEnabled(false);
+            this.jCheckBoxRecording.setEnabled(false);
             stopRecording();
         }
         if (this.jCheckBoxMenuItemOptitrack.isSelected()) {
             final String server = JOptionPane.showInputDialog(this, "Optitrack IP Address",
                     s.optitrack_host);
-            optitrack_is_ground_truth =
-                    AskBoolean("Use Optitrack as Ground Truth?",
-                    optitrack_is_ground_truth);
-            this.jCheckBoxMenuItemRecordLive.setEnabled(true);
+            optitrack_is_ground_truth
+                    = AskBoolean("Use Optitrack as Ground Truth?",
+                            optitrack_is_ground_truth);
             System.out.println("optitrack_is_ground_truth = "
                     + optitrack_is_ground_truth);
+            int multicast_response = JOptionPane.showConfirmDialog(this, "Use multicast?");
+            if (multicast_response == JOptionPane.CANCEL_OPTION) {
+                this.jCheckBoxMenuItemOptitrack.setSelected(false);
+                return;
+            }
+            this.jCheckBoxRecording.setEnabled(true);
             if (null != server) {
-                ods = new OptitrackUDPStream(server);
-                ods.transform_filename = s.optitrack_trasform_filename;
-                TransformMatrixJPanel.showDialog(this, ods);
-                s.optitrack_trasform_filename = ods.transform_filename;
-                if (!ods.try_ping(1, 1000)) {
-                    int o = JOptionPane.showConfirmDialog(this,
-                            "No response to ping from optitrack. Continue?");
-                    if (o != JOptionPane.YES_OPTION) {
-                        ods.close();
-                        ods = null;
-                        return;
-                    }
+                if (!this.ConnectToOptitrack(server, multicast_response == JOptionPane.YES_OPTION)) {
+                    return;
                 }
-                s.optitrack_host = server;
                 boolean start_recording = AskBoolean("Start recording live data?",
                         false);
                 if (start_recording) {
                     startRecording();
                 }
-                ods.addListener(new ActionListener() {
-                    int action_count = 0;
-
-                    @Override
-                    public void actionPerformed(ActionEvent e) {
-                        if (action_count < 2) {
-                            s.optitrack_host = server;
-                            s.optitrack_trasform_filename = ods.transform_filename;
-                        }
-                        action_count++;
-                        UpdateOptitrackData();
-                    }
-                });
             }
         } else {
-            boolean clear_old_data =
-                    AskBoolean("Clear old data?", false);
+            boolean clear_old_data
+                    = AskBoolean("Clear old data?", false);
             if (clear_old_data) {
                 this.ClearData();
             }
@@ -3001,7 +3749,8 @@ public class HTPM_JFrame extends javax.swing.JFrame {
                 + tp.ROI_width + ","
                 + tp.ROI_height + ","
                 + tp.confidence + ","
-                + tp.radius);
+                + tp.radius + ","
+                + tp.source);
     }
     static boolean check_times = true;
 
@@ -3013,10 +3762,9 @@ public class HTPM_JFrame extends javax.swing.JFrame {
      * @param o options used for conversion including field indexes and scale
      * factors.
      * @return
-     * @throws Exception
      */
     public static TrackPoint parseTrackPointLine(String line,
-            final CsvParseOptions o) throws Exception {
+            final CsvParseOptions o) {
         String fields[] = line.split(o.delim);
         int fields_needed = Math.max(o.TIME_INDEX, Math.max(o.X_INDEX, o.Y_INDEX)) + 2;
         if (fields.length < fields_needed) {
@@ -3028,7 +3776,7 @@ public class HTPM_JFrame extends javax.swing.JFrame {
             System.out.println("line = " + line);
             System.out.println("fields[TIME_INDEX] = " + fields[o.TIME_INDEX]);
             if (confirm != JOptionPane.YES_OPTION) {
-                throw new Exception("Bad time value");
+                throw new RuntimeException("Bad time value");
             }
             check_times = false;
         }
@@ -3077,7 +3825,7 @@ public class HTPM_JFrame extends javax.swing.JFrame {
     }
 
     public static void printCsvHeader(PrintStream ps) {
-        ps.println("timestamp,personID,personcentroidX,personcentroidY,personcentroidZ,boundingboxtopcenterX,boundingboxtopcenterY,boundingboxtopcenterZ,Xvelocity,Yvelocity,Zvelocity,ROIwidth,ROIheight,confidence,radius");
+        ps.println("timestamp,personID,personcentroidX,personcentroidY,personcentroidZ,boundingboxtopcenterX,boundingboxtopcenterY,boundingboxtopcenterZ,Xvelocity,Yvelocity,Zvelocity,ROIwidth,ROIheight,confidence,radius,source");
     }
 
     /**
@@ -3093,9 +3841,312 @@ public class HTPM_JFrame extends javax.swing.JFrame {
                 return;
             }
             PrintStream ps = new PrintStream(new FileOutputStream(f));
+            printCsvHeader(ps);
             for (Track t : tracks) {
                 for (TrackPoint tp : t.data) {
                     printOneLine(tp, t.name, ps);
+                }
+            }
+            ps.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void findMatches(File gtFilesFile, File sutFilesFile, File outFile) {
+
+        class FileInfo {
+
+            String filename;
+            double start_time;
+            double end_time;
+            int num_tracks;
+            int num_points;
+        };
+
+        List<FileInfo> gtFilesInfoList = new LinkedList<>();
+        BufferedReader br = null;
+        try {
+            br = new BufferedReader(new FileReader(gtFilesFile));
+            String line = null;
+            while ((line = br.readLine()) != null) {
+                if (line.length() < 1) {
+                    continue;
+                }
+                String fileNames[] = line.split("[" + File.pathSeparator + "]+");
+                for (String filename : fileNames) {
+                    if (filename.length() < 1) {
+                        continue;
+                    }
+                    File f = new File(filename);
+                    if (!f.isDirectory()) {
+                        HTPM_JFrame.gtlist = null;
+                        HTPM_JFrame.gt_max_time = Double.NEGATIVE_INFINITY;
+                        HTPM_JFrame.gt_min_time = Double.POSITIVE_INFINITY;
+                        HTPM_JFrame.LoadGroundTruthFile(filename);
+                        HTPM_JFrame.recomputeTimeLimits();
+                        if (null == HTPM_JFrame.gtlist) {
+                            continue;
+                        }
+                        FileInfo fi = new FileInfo();
+                        fi.start_time = HTPM_JFrame.gt_min_time;
+                        fi.end_time = HTPM_JFrame.gt_max_time;
+                        fi.filename = line;
+                        fi.num_tracks = HTPM_JFrame.gtlist.size();
+                        fi.num_points = 0;
+                        for (int i = 0; i < HTPM_JFrame.gtlist.size(); i++) {
+                            try {
+                                Track track = HTPM_JFrame.gtlist.get(i);
+                                if(track.disconnected && !HTPM_JFrame.s.show_disconnected_points) {
+                                    fi.num_tracks--;
+                                    continue;
+                                }
+                                fi.num_points += track.data.size();
+                            } catch (Exception e) {
+                                // ignore
+                            }
+                        }
+                        gtFilesInfoList.add(fi);
+                    } else {
+                        File fa[] = f.listFiles(new FilenameFilter() {
+
+                            @Override
+                            public boolean accept(File dir, String name) {
+                                return name.endsWith(".csv");
+                            }
+                        });
+                        if (null == fa || fa.length < 1) {
+                            System.err.println("Directory " + f + " does not contain any .csv files.");
+                            continue;
+                        }
+                        for (int j = 0; j < fa.length; j++) {
+                            String fname = fa[j].getCanonicalPath();
+                            HTPM_JFrame.gtlist = null;
+                            HTPM_JFrame.gt_max_time = Double.NEGATIVE_INFINITY;
+                            HTPM_JFrame.gt_min_time = Double.POSITIVE_INFINITY;
+                            HTPM_JFrame.LoadGroundTruthFile(fname);
+                            HTPM_JFrame.recomputeTimeLimits();
+                            if (null == HTPM_JFrame.gtlist) {
+                                continue;
+                            }
+                            FileInfo fi = new FileInfo();
+                            fi.start_time = HTPM_JFrame.gt_min_time;
+                            fi.end_time = HTPM_JFrame.gt_max_time;
+                            fi.filename = fname;
+                            fi.num_tracks = HTPM_JFrame.gtlist.size();
+                            fi.num_points = 0;
+                            for (int i = 0; i < HTPM_JFrame.gtlist.size(); i++) {
+                                try {
+                                    Track track = HTPM_JFrame.gtlist.get(i);
+                                if(track.disconnected && !HTPM_JFrame.s.show_disconnected_points) {
+                                    fi.num_tracks--;
+                                    continue;
+                                }
+                                fi.num_points += track.data.size();
+                                } catch (Exception e) {
+                                    // ignore
+                                }
+                            }
+                            gtFilesInfoList.add(fi);
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            if (null != br) {
+                try {
+                    br.close();
+                } catch (Exception e) {
+                };
+                br = null;
+            }
+        }
+        if (null == gtFilesInfoList || gtFilesInfoList.size() < 1) {
+            System.err.println("No ground-truth files found.");
+            return;
+        }
+        List<FileInfo> sutFilesInfoList = new LinkedList<>();
+        try {
+            br = new BufferedReader(new FileReader(sutFilesFile));
+            String line = null;
+            while ((line = br.readLine()) != null) {
+                if (line.length() < 1) {
+                    continue;
+                }
+                String fileNames[] = line.split("[" + File.pathSeparator + "]+");
+                for (String filename : fileNames) {
+                    if (filename.length() < 1) {
+                        continue;
+                    }
+                    File f = new File(filename);
+                    if (!f.isDirectory()) {
+                        HTPM_JFrame.sutlist = null;
+                        HTPM_JFrame.sut_max_time = Double.NEGATIVE_INFINITY;
+                        HTPM_JFrame.sut_min_time = Double.POSITIVE_INFINITY;
+                        HTPM_JFrame.LoadSystemUnderTestFile(filename);
+                        HTPM_JFrame.recomputeTimeLimits();
+                        if (null == HTPM_JFrame.sutlist) {
+                            continue;
+                        }
+                        FileInfo fi = new FileInfo();
+                        fi.start_time = HTPM_JFrame.sut_min_time;
+                        fi.end_time = HTPM_JFrame.sut_max_time;
+                        fi.filename = line;
+                        fi.num_tracks = HTPM_JFrame.sutlist.size();
+                        fi.num_points = 0;
+                        for (int i = 0; i < HTPM_JFrame.sutlist.size(); i++) {
+                            try {
+                                Track track = HTPM_JFrame.sutlist.get(i);
+                                if(track.disconnected && !HTPM_JFrame.s.show_disconnected_points) {
+                                    fi.num_tracks--;
+                                    continue;
+                                }
+                                fi.num_points += track.data.size();
+                            } catch (Exception e) {
+                                // ignore
+                            }
+                        }
+                        sutFilesInfoList.add(fi);
+                    } else {
+                        File fa[] = f.listFiles(new FilenameFilter() {
+
+                            @Override
+                            public boolean accept(File dir, String name) {
+                                return name.endsWith(".csv");
+                            }
+                        });
+                        if (null == fa || fa.length < 1) {
+                            System.err.println("Directory " + f + " does not contain any .csv files.");
+                            continue;
+                        }
+                        for (int j = 0; j < fa.length; j++) {
+                            String fname = fa[j].getCanonicalPath();
+                            HTPM_JFrame.sutlist = null;
+                            HTPM_JFrame.sut_max_time = Double.NEGATIVE_INFINITY;
+                            HTPM_JFrame.sut_min_time = Double.POSITIVE_INFINITY;
+                            HTPM_JFrame.LoadSystemUnderTestFile(fname);
+                            HTPM_JFrame.recomputeTimeLimits();
+                            if (null == HTPM_JFrame.sutlist) {
+                                continue;
+                            }
+                            FileInfo fi = new FileInfo();
+                            fi.start_time = HTPM_JFrame.sut_min_time;
+                            fi.end_time = HTPM_JFrame.sut_max_time;
+                            fi.filename = fname;
+                            fi.num_tracks = HTPM_JFrame.sutlist.size();
+                            fi.num_points = 0;
+                            for (int i = 0; i < HTPM_JFrame.sutlist.size(); i++) {
+                                try {
+                                    Track track = HTPM_JFrame.sutlist.get(i);
+                                    if(track.disconnected && !HTPM_JFrame.s.show_disconnected_points) {
+                                        fi.num_tracks--;
+                                        continue;
+                                    }
+                                    fi.num_points += track.data.size();
+                                } catch (Exception e) {
+                                    // ignore
+                                }
+                            }
+                            sutFilesInfoList.add(fi);
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            if (null != br) {
+                try {
+                    br.close();
+                } catch (Exception e) {
+                };
+                br = null;
+            }
+        }
+        if (null == sutFilesInfoList || sutFilesInfoList.size() < 1) {
+            System.err.println("No System under test files found.");
+            return;
+        }
+        Collections.sort(gtFilesInfoList, new Comparator<FileInfo>() {
+
+            @Override
+            public int compare(FileInfo o1, FileInfo o2) {
+                return Double.compare(o1.start_time, o2.start_time);
+            }
+        });
+        PrintStream ps = null;
+        try {
+            ps = new PrintStream(new FileOutputStream(outFile));
+            ps.println("gtfile,gtdir,sutfile,sutdir,median_time_offset,dateString,gt_start,gt_end,gt_duration,sut_start,sut_end,sut_duration,gt_num_tracks,sut_num_tracks,gt_num_points,sut_num_points");
+            for (int i = 0; i < gtFilesInfoList.size(); i++) {
+                FileInfo gtfi = gtFilesInfoList.get(i);
+                for (int j = 0; j < sutFilesInfoList.size(); j++) {
+                    FileInfo sutfi = sutFilesInfoList.get(j);
+                    if (gtfi.start_time < sutfi.end_time && gtfi.end_time > sutfi.start_time) {
+                        File gtFile = new File(gtfi.filename);
+                        File sutFile = new File(sutfi.filename);
+                        PrintCsvLine(ps, gtFile.getName(), gtFile.getParentFile().getPath(),
+                                sutFile.getName(), sutFile.getParentFile().getPath(),
+                                medianTimeOffset(gtfi.filename, sutfi.filename),
+                                dateString(gtfi.start_time), gtfi.start_time, gtfi.end_time,
+                                (gtfi.end_time - gtfi.start_time),
+                                sutfi.start_time, sutfi.end_time, 
+                                (sutfi.end_time - sutfi.start_time),
+                                gtfi.num_tracks, sutfi.num_tracks,
+                                gtfi.num_points, sutfi.num_points);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            if (null != ps) {
+                try {
+                    ps.close();
+                } catch (Exception e) {
+                };
+                ps = null;
+            }
+        }
+    }
+
+    /**
+     * Save a list of tracks to a file.
+     *
+     * @param tracks list of tracks
+     * @param f csv file to save tracks to
+     */
+    public static void saveCombinedFile(List<Track> tracks, String filename_prefix) {
+        try {
+            if (null == tracks || tracks.size() < 1) {
+//                myShowMessageDialog(this, "No data to save");
+                return;
+            }
+            LinkedList<TrackPoint> newCombinedList = new LinkedList<>();
+            for (Track t : tracks) {
+                if (t != null && t.data != null) {
+                    newCombinedList.addAll(t.data);
+                }
+            }
+            Collections.sort(newCombinedList, new Comparator<TrackPoint>() {
+
+                @Override
+                public int compare(TrackPoint o1, TrackPoint o2) {
+                    return Double.compare(o1.time, o2.time);
+                }
+            });
+            File f = new File(filename_prefix + dateString(newCombinedList.get(0).time) + ".csv");
+            if (!f.getParentFile().exists()) {
+                f.getParentFile().mkdirs();
+            }
+            PrintStream ps = new PrintStream(new FileOutputStream(f));
+            printCsvHeader(ps);
+            for (int i = 0; i < newCombinedList.size(); i++) {
+                TrackPoint tp = newCombinedList.get(i);
+                if (null != tp) {
+                    printOneLine(tp, tp.name, ps);
                 }
             }
             ps.close();
@@ -3171,8 +4222,8 @@ public class HTPM_JFrame extends javax.swing.JFrame {
             if (!this.updateROI()) {
                 return;
             }
-            HTPM_JFrame.frameStatsCsvF =
-                    File.createTempFile("htpm_stats_", ".csv");
+            HTPM_JFrame.frameStatsCsvF
+                    = File.createTempFile("htpm_stats_", ".csv");
             final File f = HTPM_JFrame.frameStatsCsvF;
             String time_inc_s = JOptionPane.showInputDialog(this,
                     "Time Increment?",
@@ -3186,8 +4237,8 @@ public class HTPM_JFrame extends javax.swing.JFrame {
                 @Override
                 public void run() {
                     try {
-                        plotter_frame =
-                                new plotterJFrame();
+                        plotter_frame
+                                = new plotterJFrame();
                         plotterJFrame.lock_value_for_plot_versus_line_number(false,
                                 true);
                         plotterJFrame.setForcedLineFilterPattern("",
@@ -3220,8 +4271,8 @@ public class HTPM_JFrame extends javax.swing.JFrame {
                 try {
                     RocData rd = HTPM_JFrame.last_roc_data;
                     if (null != rd) {
-                        plotterJFrame plotter_frame =
-                                new plotterJFrame();
+                        plotterJFrame plotter_frame
+                                = new plotterJFrame();
                         plotter_frame.LoadXYFloatArrays("ROC",
                                 rd.neg_ratio,
                                 rd.pos_ratio);
@@ -3242,49 +4293,41 @@ public class HTPM_JFrame extends javax.swing.JFrame {
     private void jMenuItemShowVelocitiesActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemShowVelocitiesActionPerformed
         List<Track> tracks = this.drawPanel1.tracks;
         if (null != tracks) {
-            plotterJFrame plotter_frame =
-                    new plotterJFrame();
+            plotterJFrame plotter_frame
+                    = new plotterJFrame();
             plotter_frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
             for (Track t : tracks) {
+                if(t.disconnected) {
+                    continue;
+                }
                 PlotData pd = new PlotData();
-                if (false) {
+                if (!t.is_groundtruth) {
                     pd.name = t.toString() + "_vel_mag";
                     plotter_frame.AddPlot(pd);
+                    double last_t = Double.NEGATIVE_INFINITY;
                     for (TrackPoint tp : t.data) {
+                        if(tp.time< last_t) {
+                            System.err.println("(tp.time - last_t) = "+(tp.time-last_t));
+                            break;
+                        }
+                        last_t = tp.time;
                         plotter_frame.AddPointToPlot(pd, tp.time,
                                 Math.sqrt(tp.vel_x * tp.vel_x + tp.vel_y * tp.vel_y),
                                 true);
                     }
-//                    pd = new PlotData();
-//                    pd.name = t.toString() + "_vel_x";
-//                    plotter_frame.AddPlot(pd);
-//                    for (TrackPoint tp : t.data) {
-//                        plotter_frame.AddPointToPlot(pd, tp.time,
-//                                tp.vel_x,
-//                                true);
-//                    }
-//                    pd = new PlotData();
-//                    pd.name = t.toString() + "_vel_y";
-//                    plotter_frame.AddPlot(pd);
-//                    for (TrackPoint tp : t.data) {
-//                        plotter_frame.AddPointToPlot(pd, tp.time,
-//                                tp.vel_y,
-//                                true);
-//                    }
-//                    pd = new PlotData();
-//                    pd.name = t.toString() + "_vel_z";
-//                    plotter_frame.AddPlot(pd);
-//                    for (TrackPoint tp : t.data) {
-//                        plotter_frame.AddPointToPlot(pd, tp.time,
-//                                tp.vel_z,
-//                                true);
-//                }
+                    pd = new PlotData();
                 }
                 //else {
                 t.compute_vel_from_positions();
                 pd.name = t.toString() + "_vel_computed_from_pos_mag";
                 plotter_frame.AddPlot(pd);
+                double last_t = Double.NEGATIVE_INFINITY;
                 for (TrackPoint tp : t.data) {
+                    if(tp.time< last_t) {
+                            System.err.println("(tp.time - last_t) = "+(tp.time-last_t));
+                            break;
+                        }
+                        last_t = tp.time;
                     plotter_frame.AddPointToPlot(pd, tp.time,
                             Math.sqrt(tp.computed_vel_x * tp.computed_vel_x + tp.computed_vel_y * tp.computed_vel_y),
                             true);
@@ -3303,8 +4346,10 @@ public class HTPM_JFrame extends javax.swing.JFrame {
             Color c = ChooseColor("Please select color for selected tracks", Color.RED);
             for (Track t : tracks) {
                 if (t.selected) {
-                    t.color = c;
-                    t.explicit_color = c;
+                    t.pointColor = c;
+                    t.explicitPointColor = c;
+                    t.lineColor = c;
+                    t.explicitLineColor = c;
                 }
             }
             this.updateTree(false);
@@ -3317,9 +4362,11 @@ public class HTPM_JFrame extends javax.swing.JFrame {
         if (null != tracks) {
             for (Track t : tracks) {
                 if (t.is_groundtruth) {
-                    t.color = Color.RED;
+                    t.pointColor = Color.RED;
+                    t.lineColor = Color.RED;
                 } else {
-                    t.color = Color.BLUE;
+                    t.pointColor = Color.BLUE;
+                    t.lineColor = Color.BLUE;
                 }
             }
         }
@@ -3327,17 +4374,22 @@ public class HTPM_JFrame extends javax.swing.JFrame {
         this.drawPanel1.repaint();
     }//GEN-LAST:event_jMenuItemDefaultColorsActionPerformed
 
-    private void jMenuItemRandomColorsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemRandomColorsActionPerformed
+    public void randomizeColors() {
         List<Track> tracks = this.drawPanel1.tracks;
         if (null != tracks) {
             Random r = new Random();
             for (Track t : tracks) {
                 Color c = new Color(r.nextInt(255), r.nextInt(255), r.nextInt(255));
-                t.color = c;
+                t.pointColor = c;
+                t.lineColor = c;
             }
         }
         this.updateTree(false);
         this.drawPanel1.repaint();
+    }
+
+    private void jMenuItemRandomColorsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemRandomColorsActionPerformed
+        this.randomizeColors();
     }//GEN-LAST:event_jMenuItemRandomColorsActionPerformed
 
     private void jCheckBoxMenuItemDebugActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jCheckBoxMenuItemDebugActionPerformed
@@ -3611,7 +4663,9 @@ public class HTPM_JFrame extends javax.swing.JFrame {
                     s.gt_server_port);
             short port = Short.valueOf(svr_port_s);
             MonitoredConnection c = new MonitoredConnection(this);
-            TransformMatrixJPanel.showDialog(this, c);
+            if (this.jCheckBoxMenuItemPromptForTransforms.isSelected()) {
+                TransformMatrixJPanel.showDialog(this, c);
+            }
             System.out.println("c.transform_filename = " + c.transform_filename);
             c.socket = new Socket(svr_host, port);
             if (gt_connections == null) {
@@ -3680,22 +4734,22 @@ public class HTPM_JFrame extends javax.swing.JFrame {
     }//GEN-LAST:event_jMenuItemConnectSUTServerActionPerformed
 
     private void jCheckBoxMenuItemShowBackgroundActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jCheckBoxMenuItemShowBackgroundActionPerformed
-        this.drawPanel1.show_background_image =
-                this.jCheckBoxMenuItemShowBackground.isSelected();
+        this.drawPanel1.show_background_image
+                = this.jCheckBoxMenuItemShowBackground.isSelected();
         this.drawPanel1.repaint();
     }//GEN-LAST:event_jCheckBoxMenuItemShowBackgroundActionPerformed
 
     private void jCheckBoxMenuItemBackgroundGrayActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jCheckBoxMenuItemBackgroundGrayActionPerformed
-        if (this.jCheckBoxMenuItemBackgroundGray.isSelected()) {
-            this.drawPanel1.backgroundImage =
-                    this.drawPanel1.backgroundImageGray;
-        } else {
-            this.drawPanel1.backgroundImage =
-                    this.drawPanel1.backgroundImageColor;
-        }
-        this.drawPanel1.scaledBackgroundImage = null;
-        this.drawPanel1.subBackgroundImage = this.drawPanel1.backgroundImage;
-        this.drawPanel1.repaint();
+//        if (this.jCheckBoxMenuItemBackgroundGray.isSelected()) {
+//            this.drawPanel1.backgroundImage
+//                    = this.drawPanel1.backgroundImageGray;
+//        } else {
+//            this.drawPanel1.backgroundImage
+//                    = this.drawPanel1.backgroundImageColor;
+//        }
+//        this.drawPanel1.scaledBackgroundImage = null;
+//        this.drawPanel1.subBackgroundImage = this.drawPanel1.backgroundImage;
+//        this.drawPanel1.repaint();
     }//GEN-LAST:event_jCheckBoxMenuItemBackgroundGrayActionPerformed
 
     private void jCheckBoxMenuItemRepositionBackgroundActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jCheckBoxMenuItemRepositionBackgroundActionPerformed
@@ -3785,8 +4839,8 @@ public class HTPM_JFrame extends javax.swing.JFrame {
                 @Override
                 public void run() {
                     try {
-                        HTPM_JFrame.inc_sut_radius_on_false_clear =
-                                orig_inc_sut_radius_on_false_clear;
+                        HTPM_JFrame.inc_sut_radius_on_false_clear
+                                = orig_inc_sut_radius_on_false_clear;
                         PlayBeep();
                         drawPanel1.repaint();
                         jTextFieldSUTRadius.setText(String.format("%.3f", s.sut_radius_increase));
@@ -3871,8 +4925,8 @@ public class HTPM_JFrame extends javax.swing.JFrame {
     }//GEN-LAST:event_jMenuItemResetSettingsActionPerformed
 
     private void jCheckBoxMenuItemIgnoreSUTVelocitiesActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jCheckBoxMenuItemIgnoreSUTVelocitiesActionPerformed
-        s.ignore_sut_velocities =
-                this.jCheckBoxMenuItemIgnoreSUTVelocities.isSelected();
+        s.ignore_sut_velocities
+                = this.jCheckBoxMenuItemIgnoreSUTVelocities.isSelected();
     }//GEN-LAST:event_jCheckBoxMenuItemIgnoreSUTVelocitiesActionPerformed
 
     private void jButtonStatsDialogOkActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonStatsDialogOkActionPerformed
@@ -4214,6 +5268,7 @@ public class HTPM_JFrame extends javax.swing.JFrame {
 
     private void jCheckBoxMenuItemShowDisconnectedActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jCheckBoxMenuItemShowDisconnectedActionPerformed
         this.drawPanel1.show_disconnected = this.jCheckBoxMenuItemShowDisconnected.isSelected();
+        this.drawPanel1.repaint();
     }//GEN-LAST:event_jCheckBoxMenuItemShowDisconnectedActionPerformed
     private Point last_dragged_evt_point = null;
 
@@ -4241,14 +5296,15 @@ public class HTPM_JFrame extends javax.swing.JFrame {
                     this.drawPanel1.x_min = this.mouse_pressed_x_min;
                     this.drawPanel1.y_max = this.mouse_pressed_y_max;
                     this.drawPanel1.y_min = this.mouse_pressed_y_min;
-                    Point2D.Double evt_w_point = this.drawPanel1.img2WorldPoint(evt_point);
+                    Point2D.Double evt_w_point = this.drawPanel1.img2WorldPoint(evt_point, DrawPanel.coordType.XY);
 //                    System.out.println("evt_w_point = " + evt_w_point);
+
                     this.drawPanel1.x_max = this.mouse_pressed_x_max - (evt_w_point.x - this.mouse_pressed_evt_w_point.x);
                     this.drawPanel1.y_max = this.mouse_pressed_y_max - (evt_w_point.y - this.mouse_pressed_evt_w_point.y);
                     this.drawPanel1.x_min = this.mouse_pressed_x_min - (evt_w_point.x - this.mouse_pressed_evt_w_point.x);
                     this.drawPanel1.y_min = this.mouse_pressed_y_min - (evt_w_point.y - this.mouse_pressed_evt_w_point.y);
                     this.drawPanel1.update_img_to_world_scale(this.drawPanel1.getPreferredSize());
-                    Point2D.Double new_evt_w_point = this.drawPanel1.img2WorldPoint(evt_point);
+                    Point2D.Double new_evt_w_point = this.drawPanel1.img2WorldPoint(evt_point, DrawPanel.coordType.XY);
                     if (new_evt_w_point.distance(this.mouse_pressed_evt_w_point) > 0.1) {
                         System.err.println("pan check failed.");
                     }
@@ -4284,7 +5340,7 @@ public class HTPM_JFrame extends javax.swing.JFrame {
         JViewport mouse_pressed_viewport = this.jScrollPaneDrawPanel.getViewport();
         mouse_pressed_viewport_position = mouse_pressed_viewport.getViewPosition();
         System.out.println("mouse_pressed_viewport_position = " + mouse_pressed_viewport_position);
-        this.mouse_pressed_evt_w_point = this.drawPanel1.img2WorldPoint(this.mouse_pressed_evt_point);
+        this.mouse_pressed_evt_w_point = this.drawPanel1.img2WorldPoint(this.mouse_pressed_evt_point, DrawPanel.coordType.XY);
         mouse_pressed_x_min = this.drawPanel1.x_min;
         mouse_pressed_x_max = this.drawPanel1.x_max;
         mouse_pressed_y_min = this.drawPanel1.y_min;
@@ -4315,24 +5371,36 @@ public class HTPM_JFrame extends javax.swing.JFrame {
     public void selectTracksByRectangle(Rectangle2D.Double wrect) {
         for (Track t : this.drawPanel1.tracks) {
             t.selected = false;
-            if (null != t.explicit_color) {
-                t.color = t.explicit_color;
+            if (null != t.explicitPointColor) {
+                t.pointColor = t.explicitPointColor;
             } else {
                 if (t.is_groundtruth) {
-                    t.color = Color.red;
+                    t.pointColor = Color.red;
                 } else {
-                    t.color = Color.blue;
+                    t.pointColor = Color.blue;
                 }
             }
+            if (null != t.explicitLineColor) {
+                t.lineColor = t.explicitLineColor;
+            } else {
+                if (t.is_groundtruth) {
+                    t.lineColor = Color.red;
+                } else {
+                    t.lineColor = Color.blue;
+                }
+            }
+
             if (null != t.data) {
                 for (TrackPoint tp : t.data) {
                     if (tp.x > wrect.x && tp.x < wrect.x + wrect.width
                             && tp.y > wrect.y && tp.y < wrect.y + wrect.height) {
                         t.selected = true;
                         if (t.is_groundtruth) {
-                            t.color = Color.orange;
+                            t.pointColor = Color.orange;
+                            t.lineColor = Color.orange;
                         } else {
-                            t.color = Color.magenta;
+                            t.pointColor = Color.magenta;
+                            t.lineColor = Color.magenta;
                         }
                         break;
                     }
@@ -4364,6 +5432,338 @@ public class HTPM_JFrame extends javax.swing.JFrame {
     private void jRadioButtonSelectTracksActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jRadioButtonSelectTracksActionPerformed
         this.updateDragEnum();
     }//GEN-LAST:event_jRadioButtonSelectTracksActionPerformed
+
+    private void jMenuItemStartRecordingActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemStartRecordingActionPerformed
+        this.startRecording();
+    }//GEN-LAST:event_jMenuItemStartRecordingActionPerformed
+
+    private void jMenuItemStopRecordingActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemStopRecordingActionPerformed
+        this.stopRecording();
+    }//GEN-LAST:event_jMenuItemStopRecordingActionPerformed
+
+    private void jCheckBoxRecordingActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jCheckBoxRecordingActionPerformed
+        if (this.jCheckBoxRecording.isSelected()) {
+            this.startRecording();
+        } else {
+            this.stopRecording();
+        }
+    }//GEN-LAST:event_jCheckBoxRecordingActionPerformed
+
+    private void jCheckBoxMenuItemShowFutureTracksActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jCheckBoxMenuItemShowFutureTracksActionPerformed
+        this.drawPanel1.setShowFutureTracks(this.jCheckBoxMenuItemShowFutureTracks.isSelected());
+    }//GEN-LAST:event_jCheckBoxMenuItemShowFutureTracksActionPerformed
+
+    private void updateDisplayCoord() {
+        if (this.jRadioButtonMenuItemDisplayCoordXY.isSelected()) {
+            if (this.drawPanel1.getDisplayCoordType() != DrawPanel.coordType.XY) {
+                this.drawPanel1.setDisplayCoordType(DrawPanel.coordType.XY);
+                this.Fit();
+                this.drawPanel1.repaint();
+            }
+        } else if (this.jRadioButtonMenuItemDisplayCoordXZ.isSelected()) {
+            if (this.drawPanel1.getDisplayCoordType() != DrawPanel.coordType.XZ) {
+                this.drawPanel1.setDisplayCoordType(DrawPanel.coordType.XZ);
+                this.Fit();
+                this.drawPanel1.repaint();
+            }
+        } else if (this.jRadioButtonMenuItemDisplayCoordZY.isSelected()) {
+            if (this.drawPanel1.getDisplayCoordType() != DrawPanel.coordType.ZY) {
+                this.drawPanel1.setDisplayCoordType(DrawPanel.coordType.ZY);
+                this.Fit();
+                this.drawPanel1.repaint();
+            }
+        }
+    }
+
+    public void updateDisplayCoordMenuItems() {
+        switch (this.drawPanel1.getDisplayCoordType()) {
+            case XY:
+                this.jRadioButtonMenuItemDisplayCoordXY.setSelected(true);
+                break;
+
+            case XZ:
+                this.jRadioButtonMenuItemDisplayCoordXZ.setSelected(true);
+                break;
+
+            case ZY:
+                this.jRadioButtonMenuItemDisplayCoordZY.setSelected(true);
+                break;
+
+        }
+    }
+
+    public void setDisplayCoordType(DrawPanel.coordType _ct) {
+        this.drawPanel1.setDisplayCoordType(_ct);
+        this.drawPanel1.repaint();
+        this.updateDisplayCoordMenuItems();
+    }
+
+    private void jRadioButtonMenuItemDisplayCoordXYActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jRadioButtonMenuItemDisplayCoordXYActionPerformed
+        updateDisplayCoord();
+    }//GEN-LAST:event_jRadioButtonMenuItemDisplayCoordXYActionPerformed
+
+    private void jRadioButtonMenuItemDisplayCoordZYActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jRadioButtonMenuItemDisplayCoordZYActionPerformed
+        updateDisplayCoord();
+    }//GEN-LAST:event_jRadioButtonMenuItemDisplayCoordZYActionPerformed
+
+    private void jRadioButtonMenuItemDisplayCoordXZActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jRadioButtonMenuItemDisplayCoordXZActionPerformed
+        updateDisplayCoord();
+    }//GEN-LAST:event_jRadioButtonMenuItemDisplayCoordXZActionPerformed
+
+    private void jRadioButtonMenuItemDisplayCoordXZItemStateChanged(java.awt.event.ItemEvent evt) {//GEN-FIRST:event_jRadioButtonMenuItemDisplayCoordXZItemStateChanged
+        updateDisplayCoord();
+    }//GEN-LAST:event_jRadioButtonMenuItemDisplayCoordXZItemStateChanged
+
+    private void jRadioButtonMenuItemDisplayCoordZYItemStateChanged(java.awt.event.ItemEvent evt) {//GEN-FIRST:event_jRadioButtonMenuItemDisplayCoordZYItemStateChanged
+        updateDisplayCoord();
+    }//GEN-LAST:event_jRadioButtonMenuItemDisplayCoordZYItemStateChanged
+
+    private void jRadioButtonMenuItemDisplayCoordXYItemStateChanged(java.awt.event.ItemEvent evt) {//GEN-FIRST:event_jRadioButtonMenuItemDisplayCoordXYItemStateChanged
+        updateDisplayCoord();
+    }//GEN-LAST:event_jRadioButtonMenuItemDisplayCoordXYItemStateChanged
+
+    private void jMenuItemZoomOutActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemZoomOutActionPerformed
+        this.drawPanel1.zoomOut();
+    }//GEN-LAST:event_jMenuItemZoomOutActionPerformed
+
+    private void jMenuItemZoomInActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemZoomInActionPerformed
+        this.drawPanel1.zoomIn();
+    }//GEN-LAST:event_jMenuItemZoomInActionPerformed
+
+    private void jMenuItemPanUpActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemPanUpActionPerformed
+        this.drawPanel1.panUp();
+    }//GEN-LAST:event_jMenuItemPanUpActionPerformed
+
+    private void jMenuItemPanDownActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemPanDownActionPerformed
+        this.drawPanel1.panDown();
+    }//GEN-LAST:event_jMenuItemPanDownActionPerformed
+
+    private void jMenuItemPanLeftActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemPanLeftActionPerformed
+        this.drawPanel1.panLeft();
+    }//GEN-LAST:event_jMenuItemPanLeftActionPerformed
+
+    private void jMenuItemPanRightActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemPanRightActionPerformed
+        this.drawPanel1.panRight();
+    }//GEN-LAST:event_jMenuItemPanRightActionPerformed
+
+//    private FlashLadarJOGLPointCloudViewer cloud_viewer;
+//    public void Show3D() {
+////        try {
+////            if (null == cloud_viewer) {
+////                cloud_viewer = FlashLadarJOGLPointCloudViewer.getCloudViewer();
+////            }
+////            cloud_viewer.setExitOnClose(false);
+////            cloud_viewer.Start();
+////            List<List<Track>> l = new LinkedList<List<Track>>();
+////            l.add(gtlist);
+////            l.add(sutlist);
+////            cloud_viewer.setTracksListOfLists(l);
+////        } catch (Exception e) {
+////        }
+//    }
+    fxpointcloudviewer.Container3DJFrame fxviewer = null;
+
+    public void Show3DFx() {
+        try {
+            if (null == fxviewer) {
+                fxviewer = new fxpointcloudviewer.Container3DJFrame();
+            }
+            List<List<Track>> l = new LinkedList<List<Track>>();
+            l.add(gtlist);
+            l.add(sutlist);
+            fxviewer.setTracksListOfLists(l);
+            fxviewer.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
+            fxviewer.setVisible(true);
+        } catch (Exception e) {
+        }
+    }
+
+    private void jMenuItemSetConnectionLineCollorActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemSetConnectionLineCollorActionPerformed
+        List<Track> tracks = this.drawPanel1.tracks;
+        if (null != tracks) {
+            Color c = ChooseColor("Please select color lines connecting points in selected tracks", Color.RED);
+            for (Track t : tracks) {
+                if (t.selected) {
+                    t.lineColor = c;
+                    t.explicitLineColor = c;
+                }
+            }
+            this.updateTree(false);
+            this.drawPanel1.repaint();
+        }
+    }//GEN-LAST:event_jMenuItemSetConnectionLineCollorActionPerformed
+
+    private void jMenuItemShow3DFxActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemShow3DFxActionPerformed
+        this.Show3DFx();
+    }//GEN-LAST:event_jMenuItemShow3DFxActionPerformed
+
+    public static String settingsToString(settings _s) {
+        String ret = "";
+        try {
+            for (Field field : settings.class.getFields()) {
+                Object o = field.get(_s);
+                if (o != null) {
+                    ret += field.getName() + "=" + o.toString() + "\n";
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return ret;
+    }
+
+    private void stringToSettings(String _s) {
+        try {
+            if (null == _s) {
+                return;
+            }
+            BufferedReader br = new BufferedReader(new StringReader(_s));
+            HTPM_JFrame.s = readSettings(br);
+        } catch (IOException iOException) {
+            iOException.printStackTrace();
+        }
+    }
+
+    private void jMenuItemEditSettingsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemEditSettingsActionPerformed
+        this.currentValsToSettings();
+        String newSettingsString = EditSettingsJPanel.ShowDialog(this, this.settingsToString(HTPM_JFrame.s));
+        if (null != newSettingsString) {
+            this.stringToSettings(newSettingsString);
+            this.settingsToCurrent();
+            saveSettings(s, settings_file);
+            this.updateEverything();
+        }
+    }//GEN-LAST:event_jMenuItemEditSettingsActionPerformed
+
+    private void formMouseMoved(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_formMouseMoved
+        this.revalidate();
+    }//GEN-LAST:event_formMouseMoved
+
+    private File matchesFile;
+
+    /**
+     * Get the value of matchesFile
+     *
+     * @return the value of matchesFile
+     */
+    public File getMatchesFile() {
+        return matchesFile;
+    }
+
+    /**
+     * Set the value of matchesFile
+     *
+     * @param matchesFile new value of matchesFile
+     */
+    public void setMatchesFile(File matchesFile) {
+        this.matchesFile = matchesFile;
+    }
+
+    public void showMatchesFile(File f) {
+        MatchTableJPanel.TableReturn tr = MatchTableJPanel.showDialog(this, f);
+        if (null != tr) {
+            HTPM_JFrame.clearSutGTLists();
+            for (String gtfname : tr.gtfilenames) {
+                HTPM_JFrame.LoadGroundTruthFile(gtfname);
+            }
+            for (String sutfname : tr.sutfilenames) {
+                HTPM_JFrame.LoadSystemUnderTestFile(sutfname);
+            }
+            this.updateEverything();
+        }
+    }
+
+    private void jMenuItemFindMatchesActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemFindMatchesActionPerformed
+        try {
+            File mf = MatchDirsJPanel.showDialog(this, "Directories to search for matching CSV Files.");
+            if (null != mf) {
+                this.setMatchesFile(mf);
+                System.out.println("matchesFile = " + matchesFile);
+                this.showMatchesFile(mf);
+                this.saveRecentMatchFile(mf.getPath());
+            }
+        } catch (Exception exception) {
+            exception.printStackTrace();
+        }
+    }//GEN-LAST:event_jMenuItemFindMatchesActionPerformed
+
+    
+    private void jMenuItemOpenMatchFileActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemOpenMatchFileActionPerformed
+        try {
+            JFileChooser chooser = new JFileChooser();
+            chooser.addChoosableFileFilter(new FileNameExtensionFilter("Comma-Seperated-Variable File", "csv"));
+            int accept = chooser.showOpenDialog(this);
+            if (accept == JFileChooser.APPROVE_OPTION) {
+                File f = chooser.getSelectedFile();
+                this.setMatchesFile(f);
+                MatchTableJPanel.TableReturn tr = MatchTableJPanel.showDialog(this, f);
+                if (null != tr) {
+                    HTPM_JFrame.clearSutGTLists();
+                    for (String gtfname : tr.gtfilenames) {
+                        HTPM_JFrame.LoadGroundTruthFile(gtfname);
+                    }
+                    for (String sutfname : tr.sutfilenames) {
+                        HTPM_JFrame.LoadSystemUnderTestFile(sutfname);
+                    }
+                    this.updateEverything();
+                }
+                this.saveRecentMatchFile(f.getPath());
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }//GEN-LAST:event_jMenuItemOpenMatchFileActionPerformed
+
+    public static void transformFile(File f, double transform[],CsvParseOptions o) throws Exception {
+        File transformDir = new File(f.getParentFile(),"transformed");
+        transformDir.mkdirs();
+        File transformedFile = new File(transformDir,f.getName()+".transformed.csv");
+        System.out.println("transformed "+f+ " to " + transformedFile);
+        try(BufferedReader br = new BufferedReader(new FileReader(f));
+                PrintStream ps = new PrintStream(new FileOutputStream(transformedFile))) {
+                printCsvHeader(ps);
+                String line = br.readLine();
+                while(null != (line = br.readLine())) {
+                    TrackPoint pt = parseTrackPointLine(line, o);
+                    if (null != pt) {
+                        printOneLine(pt,pt.name,ps);
+                    }
+                }
+        }
+    }
+    
+    private void jMenuItemTransformFileSetActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemTransformFileSetActionPerformed
+        double orig_transform[] = CsvParseOptions.DEFAULT.transform;
+        try {
+            double transform[] = TransformMatrixJPanel.showDialog(this, "Transform for file set",
+                    CsvParseOptions.DEFAULT.transform);
+            if (null == transform) {
+                return;
+            }
+            JFileChooser chooser = new JFileChooser();
+            chooser.setMultiSelectionEnabled(true);
+            FileNameExtensionFilter csvFilter = new FileNameExtensionFilter("Comma-Seperated-Variable Files", "csv");
+            chooser.addChoosableFileFilter(csvFilter);
+            chooser.setFileFilter(csvFilter);
+            int chooser_ret = chooser.showOpenDialog(this);
+            if (chooser_ret != JFileChooser.APPROVE_OPTION) {
+                return;
+            }
+            File fa[] = chooser.getSelectedFiles();
+            if (null == fa) {
+                return;
+            }
+            CsvParseOptions.DEFAULT.transform = transform;
+            CsvParseOptions o = CsvParseOptionsJPanel.showDialog(this, fa[0]);
+            o.transform = transform;
+            for (File f : fa) {
+                transformFile(f, transform, o);
+            }
+        } catch (Exception exception) {
+            exception.printStackTrace();
+        }
+        CsvParseOptions.DEFAULT.transform = orig_transform;
+    }//GEN-LAST:event_jMenuItemTransformFileSetActionPerformed
 
     static public class GlobalStats {
 
@@ -4477,10 +5877,10 @@ public class HTPM_JFrame extends javax.swing.JFrame {
                             g.max_radius = pt.radius;
                         }
                         TrackPoint next_pt = t.data.get(i + 1);
-                        g.total_vel +=
-                                Math.sqrt(pt.vel_x * pt.vel_x + pt.vel_y * pt.vel_y);
-                        double time_diff =
-                                (next_pt.time - pt.time);
+                        g.total_vel
+                                += Math.sqrt(pt.vel_x * pt.vel_x + pt.vel_y * pt.vel_y);
+                        double time_diff
+                                = (next_pt.time - pt.time);
                         if (g.max_time_diff < time_diff) {
                             g.max_time_diff = time_diff;
                         }
@@ -4488,8 +5888,8 @@ public class HTPM_JFrame extends javax.swing.JFrame {
                             g.min_time_diff = time_diff;
                         }
                         g.total_time += time_diff;
-                        double dist_diff =
-                                (next_pt.distance(pt));
+                        double dist_diff
+                                = (next_pt.distance(pt));
                         if (g.max_dist_diff < dist_diff) {
                             g.max_dist_diff = dist_diff;
                         }
@@ -4784,15 +6184,10 @@ public class HTPM_JFrame extends javax.swing.JFrame {
     static HTPM_JFrame main_frame = null;
     static boolean bad_time_warning_given = false;
 
-    public static void AddTrackPointToTracks(List<Track> tracks,
-            TrackPoint pt,
-            boolean is_groundtruth,
-            String source,
-            Color c,
-            boolean live,
-            int line_num,
-            boolean source_has_vel_info,
-            CsvParseOptions o) {
+    final static boolean ignore_bad_time = true;
+
+    public static Track FindCurTrack(List<Track> tracks, TrackPoint pt,
+            boolean is_groundtruth, String source, Color c, boolean live) {
         Track cur_track = null;
         for (Track t : tracks) {
             if (t.name.compareTo(pt.name) == 0
@@ -4807,10 +6202,16 @@ public class HTPM_JFrame extends javax.swing.JFrame {
             cur_track = new Track();
             cur_track.is_groundtruth = is_groundtruth;
             cur_track.name = pt.name;
+            if (is_groundtruth) {
+                cur_track.setInterpolatonMethod(s.gtInterpMethod);
+            } else {
+                cur_track.setInterpolatonMethod(s.sutInterpMethod);
+            }
             if (pt.name.length() < 1 || pt.name.indexOf("unaffiliated") > 0) {
                 cur_track.disconnected = true;
             }
-            cur_track.color = c;
+            cur_track.pointColor = c;
+            cur_track.lineColor = c;
             cur_track.source = source;
             tracks.add(cur_track);
 //            if (is_groundtruth) {
@@ -4836,7 +6237,19 @@ public class HTPM_JFrame extends javax.swing.JFrame {
                 });
             }
         }
+        return cur_track;
+    }
 
+    public static void AddTrackPointToTracks(List<Track> tracks,
+            TrackPoint pt,
+            boolean is_groundtruth,
+            String source,
+            Color c,
+            boolean live,
+            int line_num,
+            boolean source_has_vel_info,
+            CsvParseOptions o) {
+        Track cur_track = FindCurTrack(tracks, pt, is_groundtruth, source, c, live);
         if (null == cur_track.data) {
             cur_track.data = new ArrayList<TrackPoint>();
         }
@@ -4862,7 +6275,7 @@ public class HTPM_JFrame extends javax.swing.JFrame {
                 final String msgS = "New point in track(" + pt.name + ") from "
                         + source + " on line " + line_num + "  has time(=" + pt.time + ") less than or equal to previos point. (diff="
                         + diff + ")";
-                if (!bad_time_warning_given) {
+                if (!bad_time_warning_given && !ignore_bad_time) {
                     java.awt.EventQueue.invokeLater(new Runnable() {
                         @Override
                         public void run() {
@@ -4874,6 +6287,7 @@ public class HTPM_JFrame extends javax.swing.JFrame {
                 System.out.println(msgS);
             }
         }
+        pt.source = cur_track.source;
         cur_track.data.add(pt);
         if (live) {
             cur_track.cur_time_index = cur_track.data.size() - 1;
@@ -5138,6 +6552,9 @@ public class HTPM_JFrame extends javax.swing.JFrame {
         return -time_offset;
     }
 
+    static public double sut_time_offset = 0.0;
+    static public double gt_time_offset = 0.0;
+
     /**
      * Read a csv file and return the parsed contents in a list of tracks.
      *
@@ -5166,6 +6583,11 @@ public class HTPM_JFrame extends javax.swing.JFrame {
                 try {
                     TrackPoint pt = parseTrackPointLine(line, o);
                     if (null != pt) {
+                        if (is_groundtruth) {
+                            pt.time += gt_time_offset;
+                        } else {
+                            pt.time += sut_time_offset;
+                        }
                         HTPM_JFrame.AddTrackPointToTracks(tracks,
                                 pt,
                                 is_groundtruth, filename, c, false,
@@ -5295,10 +6717,10 @@ public class HTPM_JFrame extends javax.swing.JFrame {
                 sutIdList.add(i);
             }
             Collections.shuffle(sutIdList);
-            int num_humans_to_start =
-                    Integer.valueOf(JOptionPane.showInputDialog("Number of humans to start", (r.nextInt(3) + 1)));
-            int max_humans =
-                    Integer.valueOf(JOptionPane.showInputDialog("Maximum number of humans", 10));
+            int num_humans_to_start
+                    = Integer.valueOf(JOptionPane.showInputDialog("Number of humans to start", (r.nextInt(3) + 1)));
+            int max_humans
+                    = Integer.valueOf(JOptionPane.showInputDialog("Maximum number of humans", 10));
             for (int i = 0; i < num_humans_to_start; i++) {
                 GTHumanState h = new GTHumanState();
                 h.x = r.nextDouble() * 3.0 + 5.0;
@@ -5505,8 +6927,8 @@ public class HTPM_JFrame extends javax.swing.JFrame {
                 if ("progress" == evt.getPropertyName()) {
                     int progress = (Integer) evt.getNewValue();
                     progressMonitor.setProgress(progress);
-                    String message =
-                            String.format("Completed %d%%.\n", progress);
+                    String message
+                            = String.format("Completed %d%%.\n", progress);
                     progressMonitor.setNote(message);
                     if (progressMonitor.isCanceled() || task.isDone()) {
                         if (progressMonitor.isCanceled()) {
@@ -5604,8 +7026,8 @@ public class HTPM_JFrame extends javax.swing.JFrame {
                 if ("progress" == evt.getPropertyName()) {
                     int progress = (Integer) evt.getNewValue();
                     progressMonitor.setProgress(progress);
-                    String message =
-                            String.format("Completed %d%%.\n", progress);
+                    String message
+                            = String.format("Completed %d%%.\n", progress);
                     progressMonitor.setNote(message);
                     if (progressMonitor.isCanceled() || task.isDone()) {
                         PlayAlert();
@@ -5619,6 +7041,103 @@ public class HTPM_JFrame extends javax.swing.JFrame {
         rocTask.execute();
     }
 
+    public static void clearSutGTLists() {
+        HTPM_JFrame.gs_gt = null;
+        HTPM_JFrame.gs_sut = null;
+        HTPM_JFrame.gt_max_time = Double.NEGATIVE_INFINITY;
+        HTPM_JFrame.gt_min_time = Double.POSITIVE_INFINITY;
+        HTPM_JFrame.gtlist = null;
+        HTPM_JFrame.sut_max_time = Double.NEGATIVE_INFINITY;
+        HTPM_JFrame.sut_min_time = Double.POSITIVE_INFINITY;
+        HTPM_JFrame.sutlist = null;
+    }
+
+    public void makeMoviesAllMatches(final File matchFile) {
+        Thread t = new Thread(new Runnable() {
+
+            @Override
+            public void run() {
+                makeMoviesAllMatchesPriv(matchFile);
+            }
+        }, "makeMoviesAllMatches");
+        t.start();
+    }
+
+    public void makeMoviesAllMatchesPriv(final File matchFile) {
+        BufferedReader br = null;
+        try {
+            br = new BufferedReader(new FileReader(matchFile));
+            String line = null;
+            while ((line = br.readLine()) != null) {
+                String fields[] = line.split("[ \t,;]+");
+                if (fields == null || fields.length < 2) {
+                    continue;
+                }
+                String gtfname = fields[0];
+                if (gtfname.compareTo("gtfile") == 0) {
+                    continue;
+                }
+                String gtdir = fields[1];
+                String sutfname = fields[2];
+                String sutdir = fields[3];
+                File gtFile = new File(gtdir, gtfname);
+                File sutFile = new File(sutdir, sutfname);
+                HTPM_JFrame.clearSutGTLists();
+                HTPM_JFrame.LoadGroundTruthFile(gtfname);
+                main_frame.updateEverything();
+                HTPM_JFrame.LoadSystemUnderTestFile(sutfname);
+                main_frame.updateEverything();
+                final String avi_name = gtFile.getName() + "_" + sutFile.getName() + ".avi";
+                final SynchronousQueue<Integer> sqi = new SynchronousQueue<Integer>();
+                main_frame.stopPlayRunnable = new Runnable() {
+
+                    @Override
+                    public void run() {
+                        try {
+                            System.out.println("calling sqi.put(0) for " + avi_name);
+                            sqi.put(0);
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    }
+                };
+                SwingUtilities.invokeLater(new Runnable() {
+
+                    @Override
+                    public void run() {
+                        main_frame.playAndMakeMovie(DrawPanel.max_frame_count, avi_name,
+                                main_frame.drawPanel1.getMovie_frames_per_second());
+                    }
+                });
+                System.out.println("Playing " + avi_name);
+                sqi.take();
+                System.out.println("Finished " + avi_name);
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            if (null != br) {
+                try {
+                    br.close();
+                } catch (Exception e) {
+                };
+                br = null;
+            }
+        }
+    }
+
+//    public void setConnectingLineColor(Color c) {
+//        List<Track> tracks = this.drawPanel1.tracks;
+//        if (null != tracks) {
+//            for (Track t : tracks) {
+//                t.lineColor = c;
+//                t.explicitLineColor = c;
+//            }
+//            this.updateTree(false);
+//            this.drawPanel1.repaint();
+//        }
+//    }
     /**
      * main function This is not the main for the jar. That is in
      * HumanTrackingPerformanceMetrics
@@ -5650,15 +7169,91 @@ public class HTPM_JFrame extends javax.swing.JFrame {
         //</editor-fold>
 
         /* Create and display the form */
-        java.awt.EventQueue.invokeLater(new Runnable() {
+        final String fargs[] = args;
+        System.setProperty("java.util.Arrays.useLegacyMergeSort", "true");
+        SwingUtilities.invokeLater(new Runnable() {
             @Override
             public void run() {
                 main_frame = new HTPM_JFrame();
                 main_frame.setVisible(true);
+                int max_frame_count = DrawPanel.max_frame_count;
+                int fps = main_frame.drawPanel1.getMovie_frames_per_second();
+                for (int i = 0; i < fargs.length; i++) {
+                    if (i < fargs.length - 2
+                            && fargs[i].compareTo("--connectOptiTrack") == 0) {
+                        main_frame.jCheckBoxMenuItemPromptForTransforms.setSelected(false);
+                        main_frame.ConnectToOptitrack(fargs[i + 1], Boolean.valueOf(fargs[i + 2]));
+                        i += 2;
+                    }
+                    if (i < fargs.length - 1) {
+                        if (fargs[i].compareTo("--startRecord") == 0) {
+                            main_frame.startRecordingWFile(fargs[i + 1] + "_optitrac_" + dateString() + ".csv");
+                            i++;
+                        } else if (fargs[i].compareTo("--gt") == 0) {
+                            HTPM_JFrame.LoadGroundTruthFile(fargs[i + 1]);
+                            main_frame.updateEverything();
+                            i++;
+                        } else if (fargs[i].compareTo("--settings") == 0) {
+                            HTPM_JFrame.settings_file = new File(fargs[i + 1]);
+                            HTPM_JFrame.s = HTPM_JFrame.readSettings(HTPM_JFrame.settings_file);
+                            max_frame_count = DrawPanel.max_frame_count;
+                            fps = main_frame.drawPanel1.getMovie_frames_per_second();
+                            i++;
+                        } else if (fargs[i].compareTo("--sut") == 0) {
+                            HTPM_JFrame.LoadSystemUnderTestFile(fargs[i + 1]);
+                            main_frame.updateEverything();
+                            i++;
+                        } else if (fargs[i].compareTo("--lineColor") == 0) {
+                            DrawPanel.overrideLineColor = new Color(Integer.valueOf(fargs[i + 1], 16));
+                            i++;
+                        } else if (fargs[i].compareTo("--confidence") == 0) {
+                            HTPM_JFrame.s.confidence_threshold = Double.valueOf(fargs[i + 1]);
+                            i++;
+                        } else if (fargs[i].compareTo("--makemovie") == 0) {
+                            main_frame.playAndMakeMovie(max_frame_count, fargs[i + 1], fps);
+                            i++;
+                        } else if (fargs[i].compareTo("--makeMovieAllMatches") == 0) {
+                            main_frame.makeMoviesAllMatches(new File(fargs[i + 1]));
+                            i++;
+                        } else if (fargs[i].compareTo("--movie_max_frame_count") == 0) {
+                            max_frame_count = DrawPanel.max_frame_count = Integer.valueOf(fargs[i + 1]);
+                            i++;
+                        } else if (fargs[i].compareTo("--displayCoordType") == 0) {
+                            main_frame.setDisplayCoordType(DrawPanel.coordType.valueOf(fargs[i + 1]));
+                            i++;
+                        }
+                    }
+                    if (fargs[i].compareTo("--exit_on_end_playback") == 0) {
+                        main_frame.exit_on_end_playback = true;
+                    }
+                    if (fargs[i].compareTo("--randomize_colors") == 0) {
+                        main_frame.randomizeColors();
+                    }
+                    if (fargs[i].compareTo("--fit") == 0) {
+                        main_frame.Fit();
+                    }
+                    if (fargs[i].compareTo("--show3D") == 0) {
+                        //main_frame.Show3D();
+                        main_frame.Show3DFx();
+                    }
+//                    if (fargs[i].compareTo("--show3DFx") == 0) {
+//                        main_frame.Show3DFx();
+//                    }
+
+//                    if(fargs[i].compareTo("--swap_yz") == 0) {
+//                        CsvParseOptionsJPanel.swap_yz = true;
+//                    }
+                    if (fargs[i].compareTo("--hideFutureTracks") == 0) {
+                        main_frame.jCheckBoxMenuItemShowFutureTracks.setSelected(false);
+                        main_frame.drawPanel1.setShowFutureTracks(false);
+                    }
+                }
             }
         });
     }
+
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.ButtonGroup buttonGroupDisplayCoord;
     private javax.swing.ButtonGroup buttonGroupDragMode;
     private javax.swing.ButtonGroup buttonGroupMode;
     private humantrackingperformancemetrics.DrawPanel drawPanel1;
@@ -5676,14 +7271,16 @@ public class HTPM_JFrame extends javax.swing.JFrame {
     private javax.swing.JCheckBoxMenuItem jCheckBoxMenuItemOptitrack;
     private javax.swing.JCheckBoxMenuItem jCheckBoxMenuItemPlay;
     private javax.swing.JCheckBoxMenuItem jCheckBoxMenuItemPlayAndMakeMovie;
+    private javax.swing.JCheckBoxMenuItem jCheckBoxMenuItemPromptForTransforms;
     private javax.swing.JCheckBoxMenuItem jCheckBoxMenuItemPromptLogData;
-    private javax.swing.JCheckBoxMenuItem jCheckBoxMenuItemRecordLive;
     private javax.swing.JCheckBoxMenuItem jCheckBoxMenuItemRepositionBackground;
     private javax.swing.JCheckBoxMenuItem jCheckBoxMenuItemSaveImages;
     private javax.swing.JCheckBoxMenuItem jCheckBoxMenuItemShowBackground;
     private javax.swing.JCheckBoxMenuItem jCheckBoxMenuItemShowDisconnected;
+    private javax.swing.JCheckBoxMenuItem jCheckBoxMenuItemShowFutureTracks;
     private javax.swing.JCheckBoxMenuItem jCheckBoxMenuItemShowLabels;
     private javax.swing.JCheckBoxMenuItem jCheckBoxMenuItemShowOnlySelected;
+    private javax.swing.JCheckBox jCheckBoxRecording;
     private javax.swing.JDialog jDialog1;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel3;
@@ -5701,6 +7298,7 @@ public class HTPM_JFrame extends javax.swing.JFrame {
     private javax.swing.JMenu jMenu8;
     private javax.swing.JMenuBar jMenuBar1;
     private javax.swing.JMenu jMenuConnections;
+    private javax.swing.JMenu jMenuDisplayCoords;
     private javax.swing.JMenuItem jMenuItem1;
     private javax.swing.JMenuItem jMenuItem2DRegistration;
     private javax.swing.JMenuItem jMenuItemChangeSourceLabel;
@@ -5710,7 +7308,9 @@ public class HTPM_JFrame extends javax.swing.JFrame {
     private javax.swing.JMenuItem jMenuItemConnectGTServer;
     private javax.swing.JMenuItem jMenuItemConnectSUTServer;
     private javax.swing.JMenuItem jMenuItemDefaultColors;
+    private javax.swing.JMenuItem jMenuItemEditSettings;
     private javax.swing.JMenuItem jMenuItemEditTimeProj;
+    private javax.swing.JMenuItem jMenuItemFindMatches;
     private javax.swing.JMenuItem jMenuItemFit;
     private javax.swing.JMenuItem jMenuItemGenRandom;
     private javax.swing.JMenuItem jMenuItemGotoPlotterMinTime;
@@ -5720,8 +7320,13 @@ public class HTPM_JFrame extends javax.swing.JFrame {
     private javax.swing.JMenuItem jMenuItemHideSelectedTracks;
     private javax.swing.JMenuItem jMenuItemManageLiveConnections;
     private javax.swing.JMenuItem jMenuItemOpenGroundTruth;
+    private javax.swing.JMenuItem jMenuItemOpenMatchFile;
     private javax.swing.JMenuItem jMenuItemOpenSettings;
     private javax.swing.JMenuItem jMenuItemOpenSutCsv;
+    private javax.swing.JMenuItem jMenuItemPanDown;
+    private javax.swing.JMenuItem jMenuItemPanLeft;
+    private javax.swing.JMenuItem jMenuItemPanRight;
+    private javax.swing.JMenuItem jMenuItemPanUp;
     private javax.swing.JMenuItem jMenuItemROI;
     private javax.swing.JMenuItem jMenuItemRandomColors;
     private javax.swing.JMenuItem jMenuItemResetSettings;
@@ -5729,8 +7334,10 @@ public class HTPM_JFrame extends javax.swing.JFrame {
     private javax.swing.JMenuItem jMenuItemSaveImages;
     private javax.swing.JMenuItem jMenuItemSaveSettings;
     private javax.swing.JMenuItem jMenuItemSaveSut;
+    private javax.swing.JMenuItem jMenuItemSetConnectionLineCollor;
     private javax.swing.JMenuItem jMenuItemSetSelectedTracksColor;
     private javax.swing.JMenuItem jMenuItemSetTrackTailHighlightTime;
+    private javax.swing.JMenuItem jMenuItemShow3DFx;
     private javax.swing.JMenuItem jMenuItemShowAllTracks;
     private javax.swing.JMenuItem jMenuItemShowComputedVelocities;
     private javax.swing.JMenuItem jMenuItemShowROCCurve;
@@ -5738,13 +7345,24 @@ public class HTPM_JFrame extends javax.swing.JFrame {
     private javax.swing.JMenuItem jMenuItemShowStatVTime;
     private javax.swing.JMenuItem jMenuItemShowTimeLocal;
     private javax.swing.JMenuItem jMenuItemShowVelocities;
+    private javax.swing.JMenuItem jMenuItemStartRecording;
+    private javax.swing.JMenuItem jMenuItemStopRecording;
+    private javax.swing.JMenuItem jMenuItemTransformFileSet;
     private javax.swing.JMenuItem jMenuItemTransformSelected;
+    private javax.swing.JMenuItem jMenuItemZoomIn;
+    private javax.swing.JMenuItem jMenuItemZoomOut;
+    private javax.swing.JMenu jMenuMatches;
     private javax.swing.JMenu jMenuMode;
+    private javax.swing.JMenu jMenuPanAndZoom;
     private javax.swing.JMenu jMenuRecentGroundTruthCsv;
+    private javax.swing.JMenu jMenuRecentMatchFiles;
     private javax.swing.JMenu jMenuRecentSystemUnderTestCsv;
     private javax.swing.JMenu jMenuView;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JRadioButton jRadioButtonMeasure;
+    private javax.swing.JRadioButtonMenuItem jRadioButtonMenuItemDisplayCoordXY;
+    private javax.swing.JRadioButtonMenuItem jRadioButtonMenuItemDisplayCoordXZ;
+    private javax.swing.JRadioButtonMenuItem jRadioButtonMenuItemDisplayCoordZY;
     private javax.swing.JRadioButtonMenuItem jRadioButtonMenuItemModeFalseClear;
     private javax.swing.JRadioButtonMenuItem jRadioButtonMenuItemModeFalseOccupied;
     private javax.swing.JRadioButtonMenuItem jRadioButtonMenuItemModeGTOccupied;

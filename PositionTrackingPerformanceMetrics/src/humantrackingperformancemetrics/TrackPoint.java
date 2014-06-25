@@ -47,16 +47,16 @@ public class TrackPoint extends Point3D implements Cloneable{
     
     public void applyTransform(float transform[]) {
         super.applyTransform(transform);
-        vel_x = orig_vel_x *transform[0] + orig_vel_y*transform[1] + orig_vel_z*transform[2]+transform[3];
-        vel_y = orig_vel_x *transform[4] + orig_vel_y*transform[5] + orig_vel_z*transform[6]+transform[7];
-        vel_z = orig_vel_x *transform[8] + orig_vel_y*transform[9] + orig_vel_z*transform[10]+transform[11];
+        vel_x = orig_vel_x *transform[0] + orig_vel_y*transform[1] + orig_vel_z*transform[2];
+        vel_y = orig_vel_x *transform[4] + orig_vel_y*transform[5] + orig_vel_z*transform[6];
+        vel_z = orig_vel_x *transform[8] + orig_vel_y*transform[9] + orig_vel_z*transform[10];
     }
     
     public void applyTransform(double transform[]) {
         super.applyTransform(transform);
-        vel_x = (float) (orig_vel_x *transform[0] + orig_vel_y*transform[1] + orig_vel_z*transform[2]+transform[3]);
-        vel_y = (float) (orig_vel_x *transform[4] + orig_vel_y*transform[5] + orig_vel_z*transform[6]+transform[7]);
-        vel_z = (float) (orig_vel_x *transform[8] + orig_vel_y*transform[9] + orig_vel_z*transform[10]+transform[11]);
+        vel_x = (float) (orig_vel_x *transform[0] + orig_vel_y*transform[1] + orig_vel_z*transform[2]);
+        vel_y = (float) (orig_vel_x *transform[4] + orig_vel_y*transform[5] + orig_vel_z*transform[6]);
+        vel_z = (float) (orig_vel_x *transform[8] + orig_vel_y*transform[9] + orig_vel_z*transform[10]);
     }
     /**
      * Id for the track this TrackPoint should belong to
@@ -107,6 +107,8 @@ public class TrackPoint extends Point3D implements Cloneable{
     public double ROI_width=0.0;
     public double ROI_height=0.0;
     
+    public String source = null;
+    
     @Override
     public TrackPoint clone() {
         TrackPoint pt = new TrackPoint(orig_x,orig_y,orig_z,
@@ -125,6 +127,7 @@ public class TrackPoint extends Point3D implements Cloneable{
         pt.radius = this.radius;
         pt.ROI_height = this.ROI_height;
         pt.ROI_width = this.ROI_width;
+        pt.source = this.source;
         return pt;
     }
 }

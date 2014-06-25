@@ -390,7 +390,7 @@ public class CsvParseOptionsJPanel extends javax.swing.JPanel {
         // TODO add your handling code here:
     }//GEN-LAST:event_jTextFieldTimeOffsetActionPerformed
     public boolean cancelled = false;
-    
+
     private void jButtonOkActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonOkActionPerformed
         try {
             options.DISTANCE_SCALE = Double.valueOf(this.jTextFieldDistanceScale.getText());
@@ -414,7 +414,7 @@ public class CsvParseOptionsJPanel extends javax.swing.JPanel {
             JOptionPane.showMessageDialog(this, exception.getMessage());
         }
     }//GEN-LAST:event_jButtonOkActionPerformed
-    
+
     private void jButtonCancelActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonCancelActionPerformed
         try {
             cancelled = true;
@@ -429,78 +429,78 @@ public class CsvParseOptionsJPanel extends javax.swing.JPanel {
             JOptionPane.showMessageDialog(this, exception.getMessage());
         }
     }//GEN-LAST:event_jButtonCancelActionPerformed
-    
+
     private void jCheckBoxUseNameActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jCheckBoxUseNameActionPerformed
         this.jComboBoxNameIndex.setEnabled(this.jCheckBoxUseName.isSelected());
     }//GEN-LAST:event_jCheckBoxUseNameActionPerformed
-    
+
     private void jCheckBoxUseZActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jCheckBoxUseZActionPerformed
         this.jComboBoxZIndex.setEnabled(this.jCheckBoxUseZ.isSelected());
-        if(!this.jCheckBoxUseZ.isSelected()) {
+        if (!this.jCheckBoxUseZ.isSelected()) {
             this.options.Z_INDEX = -1;
             this.jComboBoxZIndex.setSelectedIndex(-1);
         }
     }//GEN-LAST:event_jCheckBoxUseZActionPerformed
-    
+
     private void jCheckBoxUseVXActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jCheckBoxUseVXActionPerformed
         this.jComboBoxVXIndex.setEnabled(this.jCheckBoxUseVX.isSelected());
-        if(!this.jCheckBoxUseVX.isSelected()) {
+        if (!this.jCheckBoxUseVX.isSelected()) {
             this.options.VX_INDEX = -1;
             this.jComboBoxVXIndex.setSelectedIndex(-1);
         }
     }//GEN-LAST:event_jCheckBoxUseVXActionPerformed
-    
+
     private void jCheckBoxUseVYActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jCheckBoxUseVYActionPerformed
         this.jComboBoxVYIndex.setEnabled(this.jCheckBoxUseVY.isSelected());
-        if(!this.jCheckBoxUseVY.isSelected()) {
+        if (!this.jCheckBoxUseVY.isSelected()) {
             this.options.VY_INDEX = -1;
             this.jComboBoxVYIndex.setSelectedIndex(-1);
         }
     }//GEN-LAST:event_jCheckBoxUseVYActionPerformed
-    
+
     private void jCheckBoxUseVZActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jCheckBoxUseVZActionPerformed
         this.jComboBoxVZIndex.setEnabled(this.jCheckBoxUseVZ.isSelected());
-        if(!this.jCheckBoxUseVZ.isSelected()) {
+        if (!this.jCheckBoxUseVZ.isSelected()) {
             this.options.VZ_INDEX = -1;
             this.jComboBoxVZIndex.setSelectedIndex(-1);
         }
     }//GEN-LAST:event_jCheckBoxUseVZActionPerformed
-    
+
     private void jCheckBoxUseConfidenceActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jCheckBoxUseConfidenceActionPerformed
         this.jComboBoxConfidenceIndex.setEnabled(this.jCheckBoxUseConfidence.isSelected());
-        if(!this.jCheckBoxUseConfidence.isSelected()) {
+        if (!this.jCheckBoxUseConfidence.isSelected()) {
             this.options.CONFIDENCE_INDEX = -1;
             this.jComboBoxConfidenceIndex.setSelectedIndex(-1);
         }
     }//GEN-LAST:event_jCheckBoxUseConfidenceActionPerformed
-    
+
     private void jCheckBoxUseRadiusActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jCheckBoxUseRadiusActionPerformed
         this.jComboBoxRadiusIndex.setEnabled(this.jCheckBoxUseRadius.isSelected());
-        if(!this.jCheckBoxUseRadius.isSelected()) {
+        if (!this.jCheckBoxUseRadius.isSelected()) {
             this.options.RADIUS_INDEX = -1;
             this.jComboBoxRadiusIndex.setSelectedIndex(-1);
         }
     }//GEN-LAST:event_jCheckBoxUseRadiusActionPerformed
-    
-    
+
+
     private void jCheckBoxApplyTransformActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jCheckBoxApplyTransformActionPerformed
         if (!this.jCheckBoxApplyTransform.isSelected()) {
             options.transform = null;
         } else {
-            options.transform = TransformMatrixJPanel.showDialog(frame,"Transform for "+this.file,options.transform);
+            options.transform = TransformMatrixJPanel.showDialog(frame, "Transform for " + this.file, options.transform);
         }
     }//GEN-LAST:event_jCheckBoxApplyTransformActionPerformed
-    
+
     private void jComboBoxConfidenceIndexActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jComboBoxConfidenceIndexActionPerformed
         // TODO add your handling code here:
     }//GEN-LAST:event_jComboBoxConfidenceIndexActionPerformed
-    
+
     private void jTextFieldFileDelimiterActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextFieldFileDelimiterActionPerformed
         this.setDelimiter(this.jTextFieldFileDelimiter.getText());
     }//GEN-LAST:event_jTextFieldFileDelimiterActionPerformed
 
     private void jCheckBoxTabDelimActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jCheckBoxTabDelimActionPerformed
-        if(this.jCheckBoxTabDelim.isSelected()) {
+        if (this.jCheckBoxTabDelim.isSelected()) {
             this.jTextFieldFileDelimiter.setText("\t");
             this.jTextFieldFileDelimiter.setEnabled(false);
             this.jTextFieldFileDelimiter.setEditable(false);
@@ -524,19 +524,19 @@ public class CsvParseOptionsJPanel extends javax.swing.JPanel {
     public JDialog dialog = null;
     public CsvParseOptions options = new CsvParseOptions();
     public Frame frame = null;
-    
+
     public CsvParseOptions getParseOptions() {
         return this.options;
     }
-    
+
     public void setParseOptions(CsvParseOptions o) {
-        this.jTextFieldTimeOffset.setText(String.format("%.4g",o.TIME_OFFSET));
-        this.jTextFieldTimeScale.setText(String.format("%.4g",o.TIME_SCALE));
-        this.jTextFieldDistanceScale.setText(String.format("%.4g",o.DISTANCE_SCALE));
+        this.jTextFieldTimeOffset.setText(String.format("%.4g", o.TIME_OFFSET));
+        this.jTextFieldTimeScale.setText(String.format("%.4g", o.TIME_SCALE));
+        this.jTextFieldDistanceScale.setText(String.format("%.4g", o.DISTANCE_SCALE));
         if (o.TIME_INDEX < this.jComboBoxTimeIndex.getItemCount()) {
             this.jComboBoxTimeIndex.setSelectedIndex(o.TIME_INDEX);
         }
-        
+
         if (o.NAME_INDEX >= 0) {
             if (o.NAME_INDEX < this.jComboBoxNameIndex.getItemCount()) {
                 this.jComboBoxNameIndex.setSelectedIndex(o.NAME_INDEX);
@@ -563,7 +563,7 @@ public class CsvParseOptionsJPanel extends javax.swing.JPanel {
             this.jComboBoxZIndex.setEnabled(false);
             this.jCheckBoxUseZ.setSelected(false);
         }
-        
+
         if (o.VX_INDEX >= 0) {
             if (o.VX_INDEX < this.jComboBoxVXIndex.getItemCount()) {
                 this.jComboBoxVXIndex.setSelectedIndex(o.VX_INDEX);
@@ -574,7 +574,7 @@ public class CsvParseOptionsJPanel extends javax.swing.JPanel {
             this.jComboBoxVXIndex.setEnabled(false);
             this.jCheckBoxUseVX.setSelected(false);
         }
-        
+
         if (o.VY_INDEX >= 0) {
             if (o.VY_INDEX < this.jComboBoxVYIndex.getItemCount()) {
                 this.jComboBoxVYIndex.setSelectedIndex(o.VY_INDEX);
@@ -595,7 +595,7 @@ public class CsvParseOptionsJPanel extends javax.swing.JPanel {
             this.jComboBoxVZIndex.setEnabled(false);
             this.jCheckBoxUseVZ.setSelected(false);
         }
-        
+
         if (o.CONFIDENCE_INDEX >= 0) {
             if (o.CONFIDENCE_INDEX < this.jComboBoxConfidenceIndex.getItemCount()) {
                 this.jComboBoxConfidenceIndex.setSelectedIndex(o.CONFIDENCE_INDEX);
@@ -618,7 +618,7 @@ public class CsvParseOptionsJPanel extends javax.swing.JPanel {
         }
         this.options = o;
     }
-    
+
     static public void LoadHeadingsToComboBoxModel(DefaultComboBoxModel cbm, String headings[]) {
         cbm.removeAllElements();
         String column_prefix = "";
@@ -629,7 +629,6 @@ public class CsvParseOptionsJPanel extends javax.swing.JPanel {
             cbm.addElement(headings[i] + " ( Column " + column_prefix + ((char) ('A' + (i % 26))) + " ) = " + Integer.toString(i));
         }
     }
-    
 
     /**
      * Get the value of delimiter
@@ -649,8 +648,7 @@ public class CsvParseOptionsJPanel extends javax.swing.JPanel {
         options.delim = _delimiter;
         this.parseHeadings(file);
     }
-    
-    
+
     private File file;
 
     /**
@@ -670,51 +668,56 @@ public class CsvParseOptionsJPanel extends javax.swing.JPanel {
     public void setFile(File file) {
         this.file = file;
     }
-    
-    public void parseHeadings(File f) {
-        if (f != null) {
-            this.setFile(f);
-        } else {
-            f = this.getFile();
-        }
+
+    static public String[] headingsFromFile(File f, String delim) {
+        String headings[] = null;
         BufferedReader br = null;
-        if (null == this.options) {
-            this.options = new CsvParseOptions();
-        }
-        CsvParseOptions o = this.options;
-        options.TIME_INDEX = CsvParseOptions.DEFAULT.TIME_INDEX;
-        options.NAME_INDEX = CsvParseOptions.DEFAULT.NAME_INDEX;
-        options.X_INDEX = CsvParseOptions.DEFAULT.X_INDEX;
-        options.Y_INDEX = CsvParseOptions.DEFAULT.Y_INDEX;
-        options.Z_INDEX = CsvParseOptions.DEFAULT.Z_INDEX;
-        options.VX_INDEX = CsvParseOptions.DEFAULT.VX_INDEX;
-        options.VY_INDEX = CsvParseOptions.DEFAULT.VY_INDEX;
-        options.VZ_INDEX = CsvParseOptions.DEFAULT.VZ_INDEX;
-        options.RADIUS_INDEX = CsvParseOptions.DEFAULT.RADIUS_INDEX;
-        options.ROI_HEIGHT_INDEX = CsvParseOptions.DEFAULT.ROI_HEIGHT_INDEX;
-        options.ROI_WIDTH_INDEX = CsvParseOptions.DEFAULT.ROI_WIDTH_INDEX;
-        options.CONFIDENCE_INDEX = CsvParseOptions.DEFAULT.CONFIDENCE_INDEX;
         try {
             br = new BufferedReader(new FileReader(f));
             String first_line = br.readLine();
-            String delim = this.getDelimiter();
-            if(delim.length() < 1) {
-                JOptionPane.showMessageDialog(this, "Empty delimiter");
-                return;
+            if(null == first_line) {
+                System.err.println("Can not read from "+f);
+                return null;
             }
-            System.out.println("delim = " + delim);
-            String headings[] = first_line.split(delim);
+            //System.out.println("delim = " + delim);
+            headings = first_line.split(delim);
             br.close();
             br = null;
-            if(headings.length < 2) {
-                return;
+        } catch (Exception e) {
+            System.err.println("Error reading : "+ f);
+            e.printStackTrace();
+        }
+        return headings;
+    }
+
+    static public CsvParseOptions optionsFromFileHeadings(CsvParseOptions o, File f, String delim) {
+        String headings[] = CsvParseOptionsJPanel.headingsFromFile(f, delim);
+        return optionsFromHeadings(o, headings);
+    }
+
+    static public CsvParseOptions optionsFromHeadings(CsvParseOptions o, String headings[]) {
+        try {
+            o.TIME_INDEX = CsvParseOptions.DEFAULT.TIME_INDEX;
+            o.NAME_INDEX = CsvParseOptions.DEFAULT.NAME_INDEX;
+            o.X_INDEX = CsvParseOptions.DEFAULT.X_INDEX;
+            o.Y_INDEX = CsvParseOptions.DEFAULT.Y_INDEX;
+            o.Z_INDEX = CsvParseOptions.DEFAULT.Z_INDEX;
+            o.VX_INDEX = CsvParseOptions.DEFAULT.VX_INDEX;
+            o.VY_INDEX = CsvParseOptions.DEFAULT.VY_INDEX;
+            o.VZ_INDEX = CsvParseOptions.DEFAULT.VZ_INDEX;
+            o.RADIUS_INDEX = CsvParseOptions.DEFAULT.RADIUS_INDEX;
+            o.ROI_HEIGHT_INDEX = CsvParseOptions.DEFAULT.ROI_HEIGHT_INDEX;
+            o.ROI_WIDTH_INDEX = CsvParseOptions.DEFAULT.ROI_WIDTH_INDEX;
+            o.CONFIDENCE_INDEX = CsvParseOptions.DEFAULT.CONFIDENCE_INDEX;
+            if (null == headings || headings.length < 2) {
+                return o;
             }
-            for(int i = 0; i < headings.length; i++) {
-                if(headings[i].startsWith("\"")) {
+            for (int i = 0; i < headings.length; i++) {
+                if (headings[i].startsWith("\"")) {
                     headings[i] = headings[i].substring(1);
                 }
-                if(headings[i].endsWith("\"")) {
-                    headings[i] = headings[i].substring(0,headings[i].length()-1);
+                if (headings[i].endsWith("\"")) {
+                    headings[i] = headings[i].substring(0, headings[i].length() - 1);
                 }
             }
             if ("Time".compareTo(headings[0]) == 0
@@ -734,7 +737,7 @@ public class CsvParseOptionsJPanel extends javax.swing.JPanel {
             for (int i = 0; i < headings.length; i++) {
                 String h = headings[i].trim();
                 if (h.length() >= 4
-                        && ( "time".equalsIgnoreCase(h.substring(0, 4))
+                        && ("time".equalsIgnoreCase(h.substring(0, 4))
                         || "# time".equalsIgnoreCase(h.substring(0, 6)))
                         && o.TIME_INDEX == CsvParseOptions.DEFAULT.TIME_INDEX) {
                     o.TIME_INDEX = i;
@@ -810,6 +813,40 @@ public class CsvParseOptionsJPanel extends javax.swing.JPanel {
                     o.RADIUS_INDEX = i;
                 }
             }
+            if(swap_yz) {
+                int tmp = o.Y_INDEX;
+                o.Y_INDEX = o.Z_INDEX;
+                o.Z_INDEX = tmp;
+                tmp = o.VY_INDEX;
+                o.VY_INDEX = o.VZ_INDEX;
+                o.VZ_INDEX = tmp;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return o;
+    }
+
+    static public boolean swap_yz = false;
+    
+    public void parseHeadings(File f) {
+        try {
+            if (f != null) {
+                this.setFile(f);
+            } else {
+                f = this.getFile();
+            }
+            String delim = this.getDelimiter();
+            if (delim.length() < 1) {
+                JOptionPane.showMessageDialog(this, "Empty delimiter");
+                return;
+            }
+            String headings[] = CsvParseOptionsJPanel.headingsFromFile(f, delim);
+            if (null == this.options) {
+                this.options = new CsvParseOptions();
+            }
+            this.options = CsvParseOptionsJPanel.optionsFromHeadings(options, headings);
+            CsvParseOptions o = this.options;
             DefaultComboBoxModel cbm = (DefaultComboBoxModel) this.jComboBoxTimeIndex.getModel();
             LoadHeadingsToComboBoxModel(cbm, headings);
             this.jComboBoxTimeIndex.setModel(cbm);
@@ -843,24 +880,16 @@ public class CsvParseOptionsJPanel extends javax.swing.JPanel {
             this.setParseOptions(o);
         } catch (Exception e) {
             e.printStackTrace();
-        } finally {
-            if (null != br) {
-                try {
-                    br.close();
-                } catch (Exception e2) {
-                };
-                br = null;
-            }
         }
     }
-    
+
     static public CsvParseOptions showDialog(Frame parent, File f) {
         try {
-            
+
             CsvParseOptionsJPanel opanel = new CsvParseOptionsJPanel();
             opanel.parseHeadings(f);
             opanel.frame = parent;
-            
+
             JDialog dialog = new JDialog(parent, Dialog.ModalityType.APPLICATION_MODAL);
             opanel.setVisible(true);
             opanel.dialog = dialog;
@@ -877,7 +906,7 @@ public class CsvParseOptionsJPanel extends javax.swing.JPanel {
         }
         return null;
     }
-    
+
     static public CsvParseOptions showDialog(Frame parent, CsvParseOptions o) {
         CsvParseOptionsJPanel opanel = new CsvParseOptionsJPanel();
         JDialog dialog = new JDialog(parent, Dialog.ModalityType.APPLICATION_MODAL);
@@ -899,7 +928,7 @@ public class CsvParseOptionsJPanel extends javax.swing.JPanel {
         }
         return opanel.options;
     }
-    
+
     static public CsvParseOptions showDialog(Frame parent) {
         CsvParseOptionsJPanel opanel = new CsvParseOptionsJPanel();
         JDialog dialog = new JDialog(parent, Dialog.ModalityType.APPLICATION_MODAL);

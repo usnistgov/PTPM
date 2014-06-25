@@ -6,7 +6,9 @@ import java.awt.event.ActionListener;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.MulticastSocket;
+import java.net.NetworkInterface;
 import java.util.LinkedList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -30,13 +32,14 @@ public class OptitrackUDPStream extends MonitoredConnection {
 
     public static boolean debug =false;
     
-    private java.net.MulticastSocket dataSocket = null;
-    private DatagramPacket dataPacket = null;
+    private java.net.DatagramSocket dataSocket = null;
+//    private DatagramPacket dataPacket = null;
     private java.net.DatagramSocket cmdSocket = null;
     private DatagramPacket cmdOutPacket = null;
     private DatagramPacket cmdResponsePacket = null;
     private String hostname;
     private InetAddress svrAddess;
+    private InetAddress dataPacketAddress;
     private InetAddress groupAddess;
     private byte data_ba[] = new byte[20000];
     private byte cmd_out_ba[] = new byte[20000];
@@ -142,6 +145,8 @@ public class OptitrackUDPStream extends MonitoredConnection {
 
     private void readPacketFromDataSocket() {
         try {
+            DatagramPacket dataPacket = new DatagramPacket(data_ba, data_ba.length,
+                    this.svrAddess, 1511);
             dataSocket.receive(dataPacket);
             if(debug) System.out.println("dataPacket = " + dataPacket);
             unpack(dataPacket.getData());
@@ -155,13 +160,15 @@ public class OptitrackUDPStream extends MonitoredConnection {
     private Thread dataSocketReaderThread = null;
     
     
+    private final boolean multicast;
     
     /**
      * Create a new stream object from which to get data from the optitrack.
      * 
      * @param _hostname Hostname or IP address of server running TrackingTools.
     */
-    public OptitrackUDPStream(String _hostname) {
+    public OptitrackUDPStream(String _hostname, boolean _multicast) {
+        this.multicast = _multicast;
         try {
             this.source = "optitack";
             this.hostname = _hostname;
@@ -171,19 +178,31 @@ public class OptitrackUDPStream extends MonitoredConnection {
                     this.svrAddess, 1510);
             cmdResponsePacket = new DatagramPacket(cmd_in_ba, cmd_in_ba.length,
                     this.svrAddess, 1510);
+            if(!multicast) {
+                dataSocket = cmdSocket;// new DatagramSocket();
+                this.dataPacketAddress = this.svrAddess;
+            } else {
             dataSocket = new MulticastSocket(1511);
             this.groupAddess = InetAddress.getByName(MULTICAST_ADDRESS);
-            dataSocket.joinGroup(this.groupAddess);
-            dataPacket = new DatagramPacket(data_ba, data_ba.length,
-                    this.groupAddess, 1511);
+//            NetworkInterface networkInterface = NetworkInterface.getByName("eth0");
+//            ((MulticastSocket)dataSocket).joinGroup(new InetSocketAddress(this.groupAddess,1511), networkInterface);
+            ((MulticastSocket)dataSocket).joinGroup(this.groupAddess);
+////            dataSocket = new DatagramSocket();
+//            dataPacket = new DatagramPacket(data_ba, data_ba.length,
+//                    this.groupAddess, 1511);
+            
+            this.dataPacketAddress = this.groupAddess;
+            }
             cmdSocketReaderThread = new Thread(new Runnable() {
                 @Override
                 public void run() {
+
+                    
                     while (!Thread.currentThread().isInterrupted()) {
                         readPacketFromCmdSocket();
                     }
                 }
-            });
+            },"cmdSocketReader");
             dataSocketReaderThread = new Thread(new Runnable() {
                 @Override
                 public void run() {
@@ -191,7 +210,7 @@ public class OptitrackUDPStream extends MonitoredConnection {
                         readPacketFromDataSocket();
                     }
                 }
-            });
+            },"dataSocketReader");
             cmdSocketReaderThread.start();
             dataSocketReaderThread.start();
         } catch (Exception ex) {
@@ -640,7 +659,7 @@ public class OptitrackUDPStream extends MonitoredConnection {
      */
     public static void main(String args[]) {
         debug=true;
-        OptitrackUDPStream ots = new OptitrackUDPStream("129.6.152.102");
+        OptitrackUDPStream ots = new OptitrackUDPStream("129.6.39.54",true);
         ots.ping();
         while (ots.updates < 3) {
             if(debug) System.out.println("ots.updates = " + ots.updates);

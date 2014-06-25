@@ -60,6 +60,24 @@ public class Point3D extends Point2D.Double {
         orig_z = _z;
     }
 
+    public void setLocation(double _x, double _y, double _z) {
+        super.setLocation(_x, _y); 
+        this.z = _z;
+    }
+
+   
+    public double distance(Point3D pt) {
+        return Math.sqrt(distanceSq(pt));
+    }
+
+    public double distanceSq(Point3D pt) {
+        return (pt.x-this.x)*(pt.x-this.x) + (pt.y-this.y)*(pt.y-this.y)+(pt.z-this.z)*(pt.z-this.z);
+    }
+
+    public void setLocation(Point3D p) {
+        this.setLocation(p.x,p.y,p.z); 
+    }
+    
    
     @Override
     public String toString() {

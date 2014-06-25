@@ -100,7 +100,7 @@ public class HtpmMovieWriter {
      * Add an image as the next frame of the movie
      * @param frame image to add
      */
-    public void addFrame(BufferedImage frame) {
+    public synchronized boolean addFrame(BufferedImage frame) {
         try {
             frame_count++;
             buf.data = frame;
@@ -109,12 +109,13 @@ public class HtpmMovieWriter {
             Logger.getLogger(HtpmMovieWriter.class.getName()).log(Level.SEVERE, null, iOException);
             close();
         }
+        return this.isOk();
     }
     
     /**
      * Close the file and release memory associated with this writer.
      */
-    public void close() {
+    public synchronized void close() {
         try {
             if(null != monte_media_mw) {
                 this.monte_media_mw.close();

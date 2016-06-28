@@ -1,4 +1,3 @@
-
 package humantrackingperformancemetrics;
 
 import java.awt.event.ActionEvent;
@@ -14,24 +13,53 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * Class wrapping communication with optitrack.
- * The optitrack is a set of infrared strobe cameras used with special targets.
- * TrackingTools software from NaturalPoint will stream positions of the detected
- * targets using the NetNat protocol if so configured.
- * The class will start two threads. One for reading from the command port(1510) 
- * and the other for reading from the data port(1511). The only command than can
- * be sent is a ping which will prompt the TrackingTools software to reply with
- * the version number and name etc. The data port gets all the data that really
- * matters.  Client classes are expected to register a listener which will be 
- * called after a data frame is received and parsed. The stream always joins a
- * multicast group even though multicast only works on a directly connected 
- * computer. 
+ * Class wrapping communication with optitrack. The optitrack is a set of
+ * infrared strobe cameras used with special targets. TrackingTools software
+ * from NaturalPoint will stream positions of the detected targets using the
+ * NetNat protocol if so configured. The class will start two threads. One for
+ * reading from the command port(1510) and the other for reading from the data
+ * port(1511). The only command than can be sent is a ping which will prompt the
+ * TrackingTools software to reply with the version number and name etc. The
+ * data port gets all the data that really matters. Client classes are expected
+ * to register a listener which will be called after a data frame is received
+ * and parsed. The stream always joins a multicast group even though multicast
+ * only works on a directly connected computer.
+ *
+ *
+ * For Documentation on format check the PacketClient.cpp sample from the NetNat
+ * SDK.
+ *
+ * https://www.optitrack.com/downloads/developer-tools.html#natnet-sdk
+ *
+ *
  * @author Will Shackleford<shackle@nist.gov>
  */
 public class OptitrackUDPStream extends MonitoredConnection {
 
-    public static boolean debug =false;
-    
+    public static boolean debug = false;
+
+    private final int major;
+
+    private final int minor;
+
+    /**
+     * Get the value of netNatVersionMinor
+     *
+     * @return the value of netNatVersionMinor
+     */
+    public int getNetNatVersionMinor() {
+        return minor;
+    }
+
+    /**
+     * Get the value of netNatVersionMajor
+     *
+     * @return the value of netNatVersionMajor
+     */
+    public int getNetNatVersionMajor() {
+        return major;
+    }
+
     private java.net.DatagramSocket dataSocket = null;
 //    private DatagramPacket dataPacket = null;
     private java.net.DatagramSocket cmdSocket = null;
@@ -55,12 +83,12 @@ public class OptitrackUDPStream extends MonitoredConnection {
     static final short NAT_MESSAGESTRING = 8;
     static final short NAT_UNRECOGNIZED_REQUEST = 100;
     static final String MULTICAST_ADDRESS = "239.255.42.99";
-    
+
     public LinkedList<ActionListener> listeners = null;
-    
 
     /**
      * Write int value to byte array ba at offset using little-endian.
+     *
      * @param ba byte array
      * @param offset offset in bytes
      * @param value value to store
@@ -74,6 +102,7 @@ public class OptitrackUDPStream extends MonitoredConnection {
 
     /**
      * Read int value from byte array at offset assuming little-endian format.
+     *
      * @param ba byte array
      * @param offset offset in bytes
      * @return value from array
@@ -86,7 +115,26 @@ public class OptitrackUDPStream extends MonitoredConnection {
     }
 
     /**
+     * Read int value from byte array at offset assuming little-endian format.
+     *
+     * @param ba byte array
+     * @param offset offset in bytes
+     * @return value from array
+     */
+    public static long readLongFromByteArray(byte ba[], int offset) {
+        return (((long) ba[offset + 0]) & 0xff)
+                | ((((long) ba[offset + 1]) << 8) & 0xff00)
+                | ((((long) ba[offset + 2]) << 16) & 0xff0000)
+                | ((((long) ba[offset + 3]) << 24) & 0xff000000)
+                | ((((long) ba[offset + 4]) << 32) & 0xff00000000L)
+                | ((((long) ba[offset + 5]) << 40) & 0xff0000000000L)
+                | ((((long) ba[offset + 6]) << 48) & 0xff000000000000L)
+                | ((((long) ba[offset + 7]) << 56) & 0xff00000000000000L);
+    }
+
+    /**
      * Write short value to byte array ba at offset using little-endian.
+     *
      * @param ba byte array
      * @param offset offset in bytes
      * @param value value to store
@@ -98,6 +146,7 @@ public class OptitrackUDPStream extends MonitoredConnection {
 
     /**
      * Read short value from byte array at offset assuming little-endian format.
+     *
      * @param ba byte array
      * @param offset offset in bytes
      * @return value from array
@@ -109,6 +158,7 @@ public class OptitrackUDPStream extends MonitoredConnection {
 
     /**
      * Write float value to byte array ba at offset using little-endian.
+     *
      * @param ba byte array
      * @param offset offset in bytes
      * @param value value to store
@@ -120,6 +170,7 @@ public class OptitrackUDPStream extends MonitoredConnection {
 
     /**
      * Read float value from byte array at offset assuming little-endian format.
+     *
      * @param ba byte array
      * @param offset offset in bytes
      * @return value from array
@@ -130,10 +181,25 @@ public class OptitrackUDPStream extends MonitoredConnection {
         return Float.intBitsToFloat(ivalue);
     }
 
+    /**
+     * Read float value from byte array at offset assuming little-endian format.
+     *
+     * @param ba byte array
+     * @param offset offset in bytes
+     * @return value from array
+     */
+    public static double readDoubleFromByteArray(byte ba[], int offset) {
+        long lvalue = readLongFromByteArray(ba, offset);
+        //if(debug) System.out.println(Integer.toHexString(ivalue));
+        return Double.longBitsToDouble(lvalue);
+    }
+
     private void readPacketFromCmdSocket() {
         try {
             cmdSocket.receive(cmdResponsePacket);
-            if(debug) System.out.println("cmdResponsePacket = " + cmdResponsePacket);
+            if (debug) {
+                System.out.println("cmdResponsePacket = " + cmdResponsePacket);
+            }
             unpack(cmdResponsePacket.getData());
         } catch (Exception exception) {
             if (!ignore_errors) {
@@ -148,7 +214,9 @@ public class OptitrackUDPStream extends MonitoredConnection {
             DatagramPacket dataPacket = new DatagramPacket(data_ba, data_ba.length,
                     this.svrAddess, 1511);
             dataSocket.receive(dataPacket);
-            if(debug) System.out.println("dataPacket = " + dataPacket);
+            if (debug) {
+                System.out.println("dataPacket = " + dataPacket);
+            }
             unpack(dataPacket.getData());
         } catch (Exception exception) {
             if (!ignore_errors) {
@@ -158,17 +226,18 @@ public class OptitrackUDPStream extends MonitoredConnection {
     }
     private Thread cmdSocketReaderThread = null;
     private Thread dataSocketReaderThread = null;
-    
-    
+
     private final boolean multicast;
-    
+
     /**
      * Create a new stream object from which to get data from the optitrack.
-     * 
+     *
      * @param _hostname Hostname or IP address of server running TrackingTools.
-    */
-    public OptitrackUDPStream(String _hostname, boolean _multicast) {
+     */
+    public OptitrackUDPStream(String _hostname, boolean _multicast, final int netNatMajor, final int netNatMinor) {
         this.multicast = _multicast;
+        this.major = netNatMajor;
+        this.minor = netNatMinor;
         try {
             this.source = "optitack";
             this.hostname = _hostname;
@@ -178,31 +247,30 @@ public class OptitrackUDPStream extends MonitoredConnection {
                     this.svrAddess, 1510);
             cmdResponsePacket = new DatagramPacket(cmd_in_ba, cmd_in_ba.length,
                     this.svrAddess, 1510);
-            if(!multicast) {
+            if (!multicast) {
                 dataSocket = cmdSocket;// new DatagramSocket();
                 this.dataPacketAddress = this.svrAddess;
             } else {
-            dataSocket = new MulticastSocket(1511);
-            this.groupAddess = InetAddress.getByName(MULTICAST_ADDRESS);
+                dataSocket = new MulticastSocket(1511);
+                this.groupAddess = InetAddress.getByName(MULTICAST_ADDRESS);
 //            NetworkInterface networkInterface = NetworkInterface.getByName("eth0");
 //            ((MulticastSocket)dataSocket).joinGroup(new InetSocketAddress(this.groupAddess,1511), networkInterface);
-            ((MulticastSocket)dataSocket).joinGroup(this.groupAddess);
+                ((MulticastSocket) dataSocket).joinGroup(this.groupAddess);
 ////            dataSocket = new DatagramSocket();
 //            dataPacket = new DatagramPacket(data_ba, data_ba.length,
 //                    this.groupAddess, 1511);
-            
-            this.dataPacketAddress = this.groupAddess;
+
+                this.dataPacketAddress = this.groupAddess;
             }
             cmdSocketReaderThread = new Thread(new Runnable() {
                 @Override
                 public void run() {
 
-                    
                     while (!Thread.currentThread().isInterrupted()) {
                         readPacketFromCmdSocket();
                     }
                 }
-            },"cmdSocketReader");
+            }, "cmdSocketReader");
             dataSocketReaderThread = new Thread(new Runnable() {
                 @Override
                 public void run() {
@@ -210,47 +278,47 @@ public class OptitrackUDPStream extends MonitoredConnection {
                         readPacketFromDataSocket();
                     }
                 }
-            },"dataSocketReader");
+            }, "dataSocketReader");
             cmdSocketReaderThread.start();
             dataSocketReaderThread.start();
         } catch (Exception ex) {
             Logger.getLogger(OptitrackUDPStream.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
-    
+
     /**
      * Number of ping replies that have been received.
      */
     public static volatile int ping_count = 0;
-    
-    
+
     /**
      * Copy of the last data frame received.
      */
-    public DataFrame last_frame_recieved =null;
-    
+    public DataFrame last_frame_recieved = null;
+
     /**
      * Add a listener that will be called whenever a data frame is received.
-     * @param al listener to add 
+     *
+     * @param al listener to add
      */
     public void addListener(ActionListener al) {
-        if(null == this.listeners) {
+        if (null == this.listeners) {
             this.listeners = new LinkedList<ActionListener>();
         }
         this.listeners.add(al);
     }
-    
+
     /**
      * Remove a previously added listener.
+     *
      * @param al listener to remove
      */
     public void removeListener(ActionListener al) {
-        if(null == this.listeners) {
+        if (null == this.listeners) {
             this.listeners = new LinkedList<ActionListener>();
         }
         this.listeners.remove(al);
     }
-    
 
     /**
      * Class containing all data obtained in one packet from optitrack.
@@ -261,39 +329,65 @@ public class OptitrackUDPStream extends MonitoredConnection {
          * frame number, seems to not to be implemented properly
          */
         public int frameNumber;
-        
+
         /**
          * Number of marker sets in this frame.
          */
         public int nMarkerSets;
-        
+
         /**
          * Array of marker set data from this frame.
          */
         public MarkerSet marker_set_array[];
-        
-        
+
         /**
          * Number of "other" markers in this frame.
          */
         public int nOtherMarkers;
-        
+
         /**
          * Array of points of the locations of the "other" markers.
          */
         public Point3D other_markers_array[];
-        
-        
+
         /**
          * Number of rigid bodies with info in this frame.
          */
         public int nRigidBodies;
-        
-        
+
         /**
          * Array of rigid body data for this frame.
          */
         public RigidBody rigid_body_array[];
+
+        public int nSkeletons;
+
+        public int nLabeledMarkers;
+
+        public LabeledMarker labeled_marker_array[];
+
+        public int nForcePlates;
+
+        /**
+         * From NatNet User's Guide
+         * 
+         * Latency is the capture computer's hardware timestamp for the given frame, 
+         * which is also displayed in Motive in the Camera Preview 
+         * viewport
+         * when camera info is enabled.  
+         * This is the same whether live or playback from file.
+         */
+        public float latency;
+
+        int timecode;
+        int timecodeSub;
+
+        public double timestamp;
+
+        short params;
+        boolean bIsRecording;                  // 0x01 Motive is recording
+        boolean bTrackedModelsChanged;
+        int eod; // end of data marker
     }
 
     /**
@@ -305,16 +399,42 @@ public class OptitrackUDPStream extends MonitoredConnection {
          * Name of the trackable as set within TrackingTools
          */
         public String name;
-        
+
         /**
          * Number of markers in this set.
          */
         public int nMarkers;
-        
+
         /**
          * Array of marker data for this marker set.
          */
         public Point3D points_array[];
+    }
+
+    /**
+     * Class with information associated with a RigidBody.
+     */
+    public class LabeledMarker {
+
+        /**
+         * Identifier
+         */
+        public int ID;
+
+        /**
+         * Position of labeled marker, this may be the centroid or just a point
+         * chosen relative to the markers within the TrackingTools program.
+         */
+        public Point3D pos;
+
+        public float size;
+
+        public short params;
+
+        boolean bOccluded;// = params & 0x01;     // marker was not visible (occluded) in this frame
+        boolean bPCSolved;//  = params & 0x02;     // position provided by point cloud solve
+        boolean bModelSolved;// = params & 0x04;  // position provided by model solve
+
     }
 
     /**
@@ -326,62 +446,72 @@ public class OptitrackUDPStream extends MonitoredConnection {
          * Identifier
          */
         public int ID;
-        
+
         /**
-         * Position of rigid body, this may be the centroid or just a point chosen
-         * relative to the markers within the TrackingTools program.
+         * Position of rigid body, this may be the centroid or just a point
+         * chosen relative to the markers within the TrackingTools program.
          */
         public Point3D pos;
-        
+
         /**
-         * Orientation as  a quaternion
+         * Orientation as a quaternion
          */
         public float ori[];
-        
+
         /**
          * Number of markers in this rigid body
          */
-        public int nRigidMarkers=0;
-        
+        public int nRigidMarkers = 0;
+
         /**
          * Array of info for each marker.
          */
         public MarkerWithId rigid_markers_array[];
-        
+
         /**
          * Mean error as computed by TrackingTools.
          */
         public float meanMarkerError;
+
+        /**
+         * rigid body was successfully tracked in this frame
+         */
+        public boolean trackingValid;
     }
-    
+
     /**
      * Class to add ID and size to Marker location.
      */
     public class MarkerWithId extends Point3D {
+
         /**
          * Identifier
          */
         public int ID;
-        
+
         /**
          * Marker size.
          */
         public float sz;
-        
+
         @Override
         public String toString() {
-            return "[ID="+ID+",sz="+String.format("%.3f",sz)+"]"+super.toString();
+            return "[ID=" + ID + ",sz=" + String.format("%.3f", sz) + "]" + super.toString();
         }
     }
 
-    private DataFrame unpackFrameData(byte data[], 
-            short iMessage, 
+    private DataFrame unpackFrameData(byte data[],
+            short iMessage,
             int nDataBytes) {
         DataFrame df = new DataFrame();
         df.frameNumber = readIntFromByteArray(data, 4);
-        if(debug) System.out.println("df.frameNumber = " + df.frameNumber);
+        if (debug) {
+            System.out.println("df.frameNumber = " + df.frameNumber);
+        }
         df.nMarkerSets = readIntFromByteArray(data, 8);
-        if(debug) System.out.println("df.nMarkerSets = " + df.nMarkerSets);
+        if (debug) {
+            System.out.println("df.nMarkerSets = " + df.nMarkerSets);
+        }
         df.marker_set_array = new MarkerSet[df.nMarkerSets];
         int offset = 12;
         for (int i = 0; i < df.nMarkerSets; i++) {
@@ -391,155 +521,341 @@ public class OptitrackUDPStream extends MonitoredConnection {
             }
             MarkerSet ms = new MarkerSet();
             df.marker_set_array[i] = ms;
-            ms.name = new String(data, name_offset, (offset - name_offset+1));
-            if(debug) System.out.println("name_offset = " + name_offset);
-            if(debug) System.out.println("offset = " + offset);
-            if(debug) System.out.println("df.marker_set_array[i].name = " + df.marker_set_array[i].name);
+            ms.name = new String(data, name_offset, (offset - name_offset + 1));
+            if (debug) {
+                System.out.println("name_offset = " + name_offset);
+            }
+            if (debug) {
+                System.out.println("offset = " + offset);
+            }
+            if (debug) {
+                System.out.println("df.marker_set_array[i].name = " + df.marker_set_array[i].name);
+            }
             offset++;
             df.marker_set_array[i].nMarkers = readIntFromByteArray(data, offset);
-            if(debug) System.out.println("df.marker_set_array[i].nMarkers = " + df.marker_set_array[i].nMarkers);
+            if (debug) {
+                System.out.println("df.marker_set_array[i].nMarkers = " + df.marker_set_array[i].nMarkers);
+            }
             offset += 4;
             if (df.marker_set_array[i].nMarkers > 0) {
                 df.marker_set_array[i].points_array = new Point3D[df.marker_set_array[i].nMarkers];
                 for (int j = 0; j < df.marker_set_array[i].nMarkers; j++) {
                     df.marker_set_array[i].points_array[j] = new Point3D();
-                    if(debug) System.out.println("offset = " + offset);
+                    if (debug) {
+                        System.out.println("offset = " + offset);
+                    }
                     df.marker_set_array[i].points_array[j].x = readFloatFromByteArray(data, offset);
                     offset += 4;
                     df.marker_set_array[i].points_array[j].y = readFloatFromByteArray(data, offset);
                     offset += 4;
                     df.marker_set_array[i].points_array[j].z = readFloatFromByteArray(data, offset);
                     offset += 4;
-                    if(debug) System.out.println("df.marker_set_array[i].points_array[j] = " + df.marker_set_array[i].points_array[j]);
+                    if (debug) {
+                        System.out.println("df.marker_set_array[i].points_array[j] = " + df.marker_set_array[i].points_array[j]);
+                    }
                 }
             }
         }
         df.nOtherMarkers = readIntFromByteArray(data, offset);
-        if(debug) System.out.println("df.nOtherMarkers = " + df.nOtherMarkers);
+        if (debug) {
+            System.out.println("df.nOtherMarkers = " + df.nOtherMarkers);
+        }
         offset += 4;
         if (df.nOtherMarkers > 0) {
             LinkedList<Point3D> markersList = new LinkedList<Point3D>();
             for (int j = 0; j < df.nOtherMarkers; j++) {
-                if(debug) System.out.println("offset = " + offset);
+                if (debug) {
+                    System.out.println("offset = " + offset);
+                }
                 float x = readFloatFromByteArray(data, offset);
                 offset += 4;
                 float y = readFloatFromByteArray(data, offset);
                 offset += 4;
                 float z = readFloatFromByteArray(data, offset);
                 offset += 4;
-                if(Math.abs(x) > 1e-4 && Math.abs(y) > 1e-4 && Math.abs(z) > 1e-4) {
-                    markersList.add(new Point3D(x,y,z));
-                    if(debug) System.out.println("df.other_markers_array[j] = " + df.other_markers_array[j]);
+                if (Math.abs(x) > 1e-4 && Math.abs(y) > 1e-4 && Math.abs(z) > 1e-4) {
+                    markersList.add(new Point3D(x, y, z));
+//                    if(debug) System.out.println("df.other_markers_array[j] = " + df.other_markers_array[j]);
                 }
             }
             df.other_markers_array = markersList.toArray(new Point3D[markersList.size()]);
         }
-        if(debug) System.out.println("offset = " + offset);
+        if (debug) {
+            System.out.println("offset = " + offset);
+        }
         df.nRigidBodies = readIntFromByteArray(data, offset);
-        if(debug) System.out.println("df.nRigidBodies = " + df.nRigidBodies);
+        if (debug) {
+            System.out.println("df.nRigidBodies = " + df.nRigidBodies);
+        }
         offset += 4;
         if (df.nRigidBodies > 0) {
             df.rigid_body_array = new RigidBody[df.nRigidBodies];
             for (int j = 0; j < df.nRigidBodies; j++) {
                 RigidBody rb = new RigidBody();
                 df.rigid_body_array[j] = rb;
-                if(debug) System.out.println("offset = " + offset);
+                if (debug) {
+                    System.out.println("offset = " + offset);
+                }
                 rb.ID = readIntFromByteArray(data, offset);
-                offset+=4;
-                if(debug) System.out.println("rb.Id = " + rb.ID);
-                float x = readFloatFromByteArray(data,offset);
-                offset +=4;
-                float y = readFloatFromByteArray(data,offset);
-                offset +=4;
-                float z = readFloatFromByteArray(data,offset);
-                rb.pos = new Point3D(x,y,z);
-                offset +=4;
-                if(debug) System.out.println("rb.pos = " + rb.pos);
+                offset += 4;
+                if (debug) {
+                    System.out.println("rb.Id = " + rb.ID);
+                }
+                float x = readFloatFromByteArray(data, offset);
+                offset += 4;
+                float y = readFloatFromByteArray(data, offset);
+                offset += 4;
+                float z = readFloatFromByteArray(data, offset);
+                rb.pos = new Point3D(x, y, z);
+                offset += 4;
+                if (debug) {
+                    System.out.println("rb.pos = " + rb.pos);
+                }
                 rb.ori = new float[4];
-                rb.ori[0] = readFloatFromByteArray(data,offset);
-                offset +=4;
-                rb.ori[1] = readFloatFromByteArray(data,offset);
-                offset +=4;
-                rb.ori[2] = readFloatFromByteArray(data,offset);
-                offset +=4;
-                rb.ori[3] = readFloatFromByteArray(data,offset);
-                offset +=4;
-                rb.nRigidMarkers = readIntFromByteArray(data,offset);
-                if(debug) System.out.println("rb.nRigidMarkers = " + rb.nRigidMarkers);
-                offset +=4;
-                if(rb.nRigidMarkers > 0) {
+                rb.ori[0] = readFloatFromByteArray(data, offset);
+                offset += 4;
+                rb.ori[1] = readFloatFromByteArray(data, offset);
+                offset += 4;
+                rb.ori[2] = readFloatFromByteArray(data, offset);
+                offset += 4;
+                rb.ori[3] = readFloatFromByteArray(data, offset);
+                offset += 4;
+                rb.nRigidMarkers = readIntFromByteArray(data, offset);
+                if (debug) {
+                    System.out.println("rb.nRigidMarkers = " + rb.nRigidMarkers);
+                }
+                offset += 4;
+                if (rb.nRigidMarkers > 0) {
                     rb.rigid_markers_array = new MarkerWithId[rb.nRigidMarkers];
-                    for(int k = 0; k < rb.nRigidMarkers; k++) {
+                    for (int k = 0; k < rb.nRigidMarkers; k++) {
                         MarkerWithId marker = new MarkerWithId();
-                        marker.x = readFloatFromByteArray(data,offset);
-                        offset+=4;
-                        marker.y = readFloatFromByteArray(data,offset);
-                        offset+=4;
-                        marker.z = readFloatFromByteArray(data,offset);
-                        offset+=4;
+                        marker.x = readFloatFromByteArray(data, offset);
+                        offset += 4;
+                        marker.y = readFloatFromByteArray(data, offset);
+                        offset += 4;
+                        marker.z = readFloatFromByteArray(data, offset);
+                        offset += 4;
                         rb.rigid_markers_array[k] = marker;
                     }
-                    for(int k = 0; k < rb.nRigidMarkers; k++) {
+                    for (int k = 0; k < rb.nRigidMarkers; k++) {
                         MarkerWithId marker = rb.rigid_markers_array[k];
-                        marker.ID = readIntFromByteArray(data,offset);
-                        offset+=4;
+                        marker.ID = readIntFromByteArray(data, offset);
+                        offset += 4;
                     }
-                    for(int k = 0; k < rb.nRigidMarkers; k++) {
+                    for (int k = 0; k < rb.nRigidMarkers; k++) {
                         MarkerWithId marker = rb.rigid_markers_array[k];
-                        marker.sz = readFloatFromByteArray(data,offset);
-                        offset+=4;
-                        if(debug) System.out.println("marker = " + marker);
+                        marker.sz = readFloatFromByteArray(data, offset);
+                        offset += 4;
+                        if (debug) {
+                            System.out.println("marker = " + marker);
+                        }
                     }
                 }
-                rb.meanMarkerError = readFloatFromByteArray(data,offset);
-                offset += 4;
-                if(debug) System.out.println("rb.meanMarkerError = " + rb.meanMarkerError);
+
+                if (major >= 2) {
+                    rb.meanMarkerError = readFloatFromByteArray(data, offset);
+                    offset += 4;
+                    if (debug) {
+                        System.out.println("rb.meanMarkerError = " + rb.meanMarkerError);
+                    }
+                }
+                // 2.6 and later
+                if (((major == 2) && (minor >= 6)) || (major > 2) || (major == 0)) {
+                    // params
+                    short params = readShortFromByteArray(data, offset);
+                    offset += 2;
+                    rb.trackingValid = (params & 0x01) != 0; // 0x01 : rigid body was successfully tracked in this frame
+                }
             }
         }
+        // skeletons (version 2.1 and later)
+        if (((major == 2) && (minor > 0)) || (major > 2)) {
+            df.nSkeletons = readIntFromByteArray(data, offset);
+            offset += 4;
+            if (debug) {
+                System.out.println("Number of skeletons:" + df.nSkeletons);
+            }
+            if (df.nSkeletons > 0) {
+                System.err.println("Skeleton data parsing not implementded.");
+                return df;
+            }
+        }
+        // labeled markers (version 2.3 and later)
+        if (((major == 2) && (minor >= 3)) || (major > 2)) {
+            df.nLabeledMarkers = readIntFromByteArray(data, offset);
+            offset += 4;
+            if (debug) {
+                System.out.println("Number of Labeled Markers:" + df.nLabeledMarkers);
+            }
+            if (df.nLabeledMarkers > 0 
+                    && (df.labeled_marker_array == null || df.labeled_marker_array.length != df.nLabeledMarkers) ) {
+                df.labeled_marker_array = new LabeledMarker[df.nLabeledMarkers];
+            }
+            for (int j = 0; j < df.nLabeledMarkers; j++) {
+
+                if (null == df.labeled_marker_array[j]) {
+                    df.labeled_marker_array[j] = new LabeledMarker();
+                }
+                LabeledMarker lm = df.labeled_marker_array[j];
+
+                // id
+                lm.ID = readIntFromByteArray(data, offset);
+                offset += 4;
+
+                if (null == lm.pos) {
+                    lm.pos = new Point3D();
+                }
+                lm.pos.x = readFloatFromByteArray(data, offset);
+                offset += 4;
+
+                lm.pos.y = readFloatFromByteArray(data, offset);
+                offset += 4;
+
+                lm.pos.z = readFloatFromByteArray(data, offset);
+                offset += 4;
+
+                lm.size = readFloatFromByteArray(data, offset);
+                offset += 4;
+
+                // 2.6 and later
+                if (((major == 2) && (minor >= 6)) || (major > 2) || (major == 0)) {
+                    // marker params
+                    lm.params = readShortFromByteArray(data, offset);
+                    offset += 2;
+
+                    lm.bOccluded = 0 != (lm.params & 0x01);     // marker was not visible (occluded) in this frame
+                    lm.bPCSolved = 0 != (lm.params & 0x02);     // position provided by point cloud solve
+                    lm.bModelSolved = 0 != (lm.params & 0x04);  // position provided by model solve
+                }
+                if (debug) {
+                    System.out.println("j = " + j);
+                    System.out.printf("ID  : %d\n", lm.ID);
+                    System.out.printf("pos : [%3.2f,%3.2f,%3.2f]\n", lm.pos.x, lm.pos.y, lm.pos.z);
+                    System.out.printf("size: [%3.2f]\n", lm.size);
+                }
+            }
+        }
+        // Force Plate data (version 2.9 and later)
+        if (((major == 2) && (minor >= 9)) || (major > 2)) {
+            df.nForcePlates = readIntFromByteArray(data, offset);
+            offset += 4;
+            if (debug) {
+                System.out.println("Number of Force Plates:" + df.nForcePlates);
+            }
+            if (df.nForcePlates > 0) {
+                System.err.println("Force Plate data parsing not implementded.");
+                return df;
+            }
+        }
+
+        // latency
+        df.latency = readFloatFromByteArray(data, offset);
+        offset += 4;
+        if (debug) {
+            System.out.println("df.latency = " + df.latency);
+        }
+
+        // timecode
+        df.timecode = readIntFromByteArray(data, offset);
+        offset += 4;
+        df.timecodeSub = readIntFromByteArray(data, offset);
+        offset += 4;
+        if (debug) {
+            System.out.println("df.timecode = " + df.timecode);
+            System.out.println("df.timecodeSub = " + df.timecodeSub);
+        }
+
+        // 2.7 and later - increased from single to double precision
+        if (((major == 2) && (minor >= 7)) || (major > 2)) {
+            df.timestamp = readFloatFromByteArray(data, offset);
+            offset += 8;
+        } else {
+            float fTemp = readFloatFromByteArray(data, offset);
+            offset += 4;
+            df.timestamp = (double) fTemp;
+        }
+        if (debug) {
+            System.out.println("df.timestamp = " + df.timestamp);
+        }
+        // frame params
+        df.params = readShortFromByteArray(data, offset);
+        if (debug) {
+            System.out.println("df.params = " + df.params);
+        }
+        offset += 2;
+        df.bIsRecording = (df.params & 0x01) != 0; // 0x01 Motive is recording
+        df.bTrackedModelsChanged = (df.params & 0x02) != 0;// 0x02 Actively tracked model list has changed
+
+        if (debug) {
+            System.out.println("df.bIsRecording = " + df.bIsRecording);
+            System.out.println("df.bTrackedModelsChanged = " + df.bTrackedModelsChanged);
+        }
+
+        // end of data tag
+        df.eod = readIntFromByteArray(data, offset);
+        if (debug) {
+            System.out.println("df.eod = " + df.eod);
+        }
+        offset += 4;
+        if (debug) {
+            System.out.println("offset at end of data unpackFrameData = " + offset);
+        }
+
         return df;
     }
 
     /**
      * Unpack the data in the byte array to identify the message type and
      * interpret accordingly.
+     *
      * @param data data received from UDP socket
      */
     public void unpack(byte data[]) {
         short iMessage = readShortFromByteArray(data, 0);
-        if(debug) System.out.println("iMessage = " + iMessage);
-        int nDataBytes = readShortFromByteArray(data, 2);
-        if(nDataBytes < 0) {
-            nDataBytes = (1<<16)-nDataBytes;
+        if (debug) {
+            System.out.println("iMessage = " + iMessage);
         }
-        if(debug) System.out.println("nDataBytes = " + nDataBytes);
+        int nDataBytes = readShortFromByteArray(data, 2);
+        if (nDataBytes < 0) {
+            nDataBytes = (1 << 16) - nDataBytes;
+        }
+        if (debug) {
+            System.out.println("nDataBytes = " + nDataBytes);
+        }
         switch (iMessage) {
             case NAT_PINGRESPONSE:
                 ping_count++;
                 String szName = new String(data, 4, 256);
-                if(debug) System.out.println("szName = " + szName);
+                if (debug) {
+                    System.out.println("szName = " + szName);
+                }
                 String version = new String(data, 260, 4);
-                if(debug) System.out.println("version = " + version);
+                if (debug) {
+                    System.out.println("version = " + version);
+                }
                 String natnet_version = new String(data, 264, 4);
-                if(debug) System.out.println("natnet_version = " + natnet_version);
+                if (debug) {
+                    System.out.println("natnet_version = " + natnet_version);
+                }
                 break;
 
             case NAT_FRAMEOFDATA:
                 this.incUpdates();
-                this.last_frame_recieved 
+                this.last_frame_recieved
                         = unpackFrameData(data, iMessage, nDataBytes);
                 break;
         }
-        if(null != listeners) {
-            ActionEvent ae = new ActionEvent(this,ActionEvent.ACTION_PERFORMED,"New data");
-            for(ActionListener al : this.listeners) {
+        if (null != listeners) {
+            ActionEvent ae = new ActionEvent(this, ActionEvent.ACTION_PERFORMED, "New data");
+            for (ActionListener al : this.listeners) {
                 al.actionPerformed(ae);
             }
         }
     }
 
     /**
-     * Send a request to TrackingTools software to return version number
-     * and verify that it is working on the correct host.
+     * Send a request to TrackingTools software to return version number and
+     * verify that it is working on the correct host.
      */
     public void sendPingRequest() {
         try {
@@ -568,35 +884,51 @@ public class OptitrackUDPStream extends MonitoredConnection {
             final int old_ping_count = ping_count;
             this.sendPingRequest();
             while (old_ping_count == ping_count) {
-                if(debug) System.out.println("ping_count = " + ping_count);
-                if(debug) System.out.println("old_ping_count = " + old_ping_count);
+                if (debug) {
+                    System.out.println("ping_count = " + ping_count);
+                }
+                if (debug) {
+                    System.out.println("old_ping_count = " + old_ping_count);
+                }
                 Thread.sleep(1000);
                 this.sendPingRequest();
             }
-            if(debug) System.out.println("ping_count = " + ping_count);
-            if(debug) System.out.println("old_ping_count = " + old_ping_count);
+            if (debug) {
+                System.out.println("ping_count = " + ping_count);
+            }
+            if (debug) {
+                System.out.println("old_ping_count = " + old_ping_count);
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
-    
+
     public boolean try_ping(int max_tries, long sleep_millis) {
         try {
             final int old_ping_count = ping_count;
             this.sendPingRequest();
             int tries = 0;
             while (old_ping_count == ping_count) {
-                if(tries> max_tries) {
+                if (tries > max_tries) {
                     return false;
                 }
                 tries++;
-                if(debug) System.out.println("ping_count = " + ping_count);
-                if(debug) System.out.println("old_ping_count = " + old_ping_count);
+                if (debug) {
+                    System.out.println("ping_count = " + ping_count);
+                }
+                if (debug) {
+                    System.out.println("old_ping_count = " + old_ping_count);
+                }
                 Thread.sleep(sleep_millis);
                 this.sendPingRequest();
             }
-            if(debug) System.out.println("ping_count = " + ping_count);
-            if(debug) System.out.println("old_ping_count = " + old_ping_count);
+            if (debug) {
+                System.out.println("ping_count = " + ping_count);
+            }
+            if (debug) {
+                System.out.println("old_ping_count = " + old_ping_count);
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -608,13 +940,21 @@ public class OptitrackUDPStream extends MonitoredConnection {
             final long old_updates = updates;
             this.sendFrameRequest();
             while (old_updates == updates) {
-                if(debug) System.out.println("updates = " + updates);
-                if(debug) System.out.println("old_updates = " + old_updates);
+                if (debug) {
+                    System.out.println("updates = " + updates);
+                }
+                if (debug) {
+                    System.out.println("old_updates = " + old_updates);
+                }
                 Thread.sleep(1000);
                 this.sendFrameRequest();
             }
-            if(debug) System.out.println("updates = " + updates);
-            if(debug) System.out.println("old_updates = " + old_updates);
+            if (debug) {
+                System.out.println("updates = " + updates);
+            }
+            if (debug) {
+                System.out.println("old_updates = " + old_updates);
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -652,17 +992,20 @@ public class OptitrackUDPStream extends MonitoredConnection {
     }
 
     /**
-     * This is not the main for the jar. The main for the jar is in 
+     * This is not the main for the jar. The main for the jar is in
      * HumanTrackingPerformanceMetrics. This main can be used to test optitrack
      * interface and this class only.
+     *
      * @param args Command line arguments are not used.
      */
     public static void main(String args[]) {
-        debug=true;
-        OptitrackUDPStream ots = new OptitrackUDPStream("129.6.39.54",true);
+        debug = true;
+        OptitrackUDPStream ots = new OptitrackUDPStream("129.6.39.54", true, 2, 6);
         ots.ping();
         while (ots.updates < 3) {
-            if(debug) System.out.println("ots.updates = " + ots.updates);
+            if (debug) {
+                System.out.println("ots.updates = " + ots.updates);
+            }
             try {
                 Thread.sleep(1000);
             } catch (Exception e) {

@@ -37,6 +37,28 @@ import javax.swing.JPanel;
  */
 public class DrawPanel extends JPanel {
 
+    
+        private String label;
+
+    /**
+     * Get the value of label
+     *
+     * @return the value of label
+     */
+    public String getLabel() {
+        return label;
+    }
+
+    /**
+     * Set the value of label
+     *
+     * @param label new value of label
+     */
+    public void setLabel(String label) {
+        this.label = label;
+        this.repaint();
+    }
+
     /**
      * Called whenever panel needs to be repainted. Implement drawing functions
      * here.
@@ -48,6 +70,9 @@ public class DrawPanel extends JPanel {
         super.paintComponent(g);
         Dimension d = this.getPreferredSize();
         paintData(g, d, this.use_sub_images_for_background);
+        if(null != label) {
+            g.drawString(label, 20, 20);
+        }
     }
     public boolean show_false_occupied_area = false;
     public boolean show_false_clear_area = false;

@@ -3535,6 +3535,7 @@ public class HTPM_JFrame extends javax.swing.JFrame {
             return;
         }
         boolean point_updated = false;
+        drawPanel1.setLabel("latency = "+ods.last_frame_recieved.latency);
         for (OptitrackUDPStream.RigidBody rb : ods.last_frame_recieved.rigid_body_array) {
             try {
                 point_updated = point_updated
@@ -3651,8 +3652,8 @@ public class HTPM_JFrame extends javax.swing.JFrame {
         }
     }
 
-    public boolean ConnectToOptitrack(final String server, final boolean use_multicast) {
-        ods = new OptitrackUDPStream(server, use_multicast);
+    public boolean ConnectToOptitrack(final String server, final boolean use_multicast, int major, int minor) {
+        ods = new OptitrackUDPStream(server, use_multicast,major,minor);
         ods.transform_filename = s.optitrack_trasform_filename;
         if (this.jCheckBoxMenuItemPromptForTransforms.isSelected()) {
             TransformMatrixJPanel.showDialog(this, ods);
@@ -3704,8 +3705,16 @@ public class HTPM_JFrame extends javax.swing.JFrame {
                 return;
             }
             this.jCheckBoxRecording.setEnabled(true);
+            final String netNatStringVersion = JOptionPane.showInputDialog(this,"Optitrack NetNat Version","2.6");
+            int netNatMajor = 2;
+            int netNatMinor = 6;
+            int pindex = netNatStringVersion.indexOf('.');
+            if(pindex > 0) {
+                netNatMajor = Integer.parseInt(netNatStringVersion.substring(0, pindex));
+                netNatMinor = Integer.parseInt(netNatStringVersion.substring(pindex+1).trim());
+            }
             if (null != server) {
-                if (!this.ConnectToOptitrack(server, multicast_response == JOptionPane.YES_OPTION)) {
+                if (!this.ConnectToOptitrack(server, multicast_response == JOptionPane.YES_OPTION,netNatMajor,netNatMinor)) {
                     return;
                 }
                 boolean start_recording = AskBoolean("Start recording live data?",
@@ -7182,7 +7191,7 @@ public class HTPM_JFrame extends javax.swing.JFrame {
                     if (i < fargs.length - 2
                             && fargs[i].compareTo("--connectOptiTrack") == 0) {
                         main_frame.jCheckBoxMenuItemPromptForTransforms.setSelected(false);
-                        main_frame.ConnectToOptitrack(fargs[i + 1], Boolean.valueOf(fargs[i + 2]));
+                        main_frame.ConnectToOptitrack(fargs[i + 1], Boolean.valueOf(fargs[i + 2]),2,6);
                         i += 2;
                     }
                     if (i < fargs.length - 1) {

@@ -226,7 +226,6 @@ public class TransformMatrixJPanel extends javax.swing.JPanel {
                 for (int j = 0; j < tm.getColumnCount(); j++) {
                     Object o = tm.getValueAt(i, j);
                     Class cls = o.getClass();
-                    System.out.println("cls = " + cls);
                     transform[i * tm.getColumnCount() + j] =
                             Double.valueOf(tm.getValueAt(i, j).toString());
                 }

@@ -3535,7 +3535,7 @@ public class HTPM_JFrame extends javax.swing.JFrame {
             return;
         }
         boolean point_updated = false;
-        drawPanel1.setLabel("latency = "+ods.last_frame_recieved.latency);
+        drawPanel1.setLabel("latency = "+ods.last_frame_recieved.latency +" ms");
         for (OptitrackUDPStream.RigidBody rb : ods.last_frame_recieved.rigid_body_array) {
             try {
                 point_updated = point_updated
@@ -3705,7 +3705,7 @@ public class HTPM_JFrame extends javax.swing.JFrame {
                 return;
             }
             this.jCheckBoxRecording.setEnabled(true);
-            final String netNatStringVersion = JOptionPane.showInputDialog(this,"Optitrack NetNat Version","2.6");
+            final String netNatStringVersion = JOptionPane.showInputDialog(this,"Optitrack NetNat Version","2.10");
             int netNatMajor = 2;
             int netNatMinor = 6;
             int pindex = netNatStringVersion.indexOf('.');

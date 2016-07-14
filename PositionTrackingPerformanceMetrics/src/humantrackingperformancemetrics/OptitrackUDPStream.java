@@ -798,7 +798,13 @@ public class OptitrackUDPStream extends MonitoredConnection {
         }
         offset += 4;
         if (debug) {
-            System.out.println("offset at end of data unpackFrameData = " + offset);
+            System.out.println("offset at end of data unpackFrameData = " + offset+", nDataBytes="+nDataBytes+",data.length="+data.length);
+            System.out.println("");
+            System.out.println("");
+            System.out.flush();
+            System.err.println("");
+            System.err.println("");
+            System.err.flush();
         }
 
         return df;

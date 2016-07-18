@@ -11,6 +11,26 @@ public class TrackPoint extends Point3D implements Cloneable{
     public final double orig_vel_y;
     public final double orig_vel_z;
         
+        private double latency;
+
+    /**
+     * Get the value of latency
+     *
+     * @return the value of latency
+     */
+    public double getLatency() {
+        return latency;
+    }
+
+    /**
+     * Set the value of latency
+     *
+     * @param latency new value of latency
+     */
+    public void setLatency(double latency) {
+        this.latency = latency;
+    }
+
     public double radius = 0.0;
     
     public TrackPoint() {

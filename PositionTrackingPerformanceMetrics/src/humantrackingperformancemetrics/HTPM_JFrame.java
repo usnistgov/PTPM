@@ -5,6 +5,7 @@ package humantrackingperformancemetrics;
 
 import diagapplet.plotter.PlotData;
 import diagapplet.plotter.plotterJFrame;
+import humantrackingperformancemetrics.OptitrackUDPStream.DataFrame;
 import static humantrackingperformancemetrics.VelocityCorrellationSimulationAndTesting.point2DwTimeListToVelList;
 import java.applet.Applet;
 import java.applet.AudioClip;
@@ -111,28 +112,28 @@ public class HTPM_JFrame extends javax.swing.JFrame {
         }
         DefaultTreeCellRenderer renderer
                 = new DefaultTreeCellRenderer() {
-                    private Track last_t = null;
-                    private ImageIcon last_image_icon = null;
+            private Track last_t = null;
+            private ImageIcon last_image_icon = null;
 
-                    @Override
-                    public Component getTreeCellRendererComponent(
-                            JTree tree,
-                            Object value,
-                            boolean sel,
-                            boolean expanded,
-                            boolean leaf,
-                            int row,
-                            boolean hasFocus) {
+            @Override
+            public Component getTreeCellRendererComponent(
+                    JTree tree,
+                    Object value,
+                    boolean sel,
+                    boolean expanded,
+                    boolean leaf,
+                    int row,
+                    boolean hasFocus) {
 
-                                super.getTreeCellRendererComponent(
-                                        tree, value, sel,
-                                        expanded, leaf, row,
-                                        hasFocus);
-                                try {
-                                    if (leaf) {
-                                        DefaultMutableTreeNode n
-                                        = (DefaultMutableTreeNode) value;
-                                        final Track t = (Track) n.getUserObject();
+                super.getTreeCellRendererComponent(
+                        tree, value, sel,
+                        expanded, leaf, row,
+                        hasFocus);
+                try {
+                    if (leaf) {
+                        DefaultMutableTreeNode n
+                                = (DefaultMutableTreeNode) value;
+                        final Track t = (Track) n.getUserObject();
 //                                if (null != last_t
 //                                        && null != last_image_icon
 //                                        && last_t.hidden == t.hidden
@@ -141,31 +142,31 @@ public class HTPM_JFrame extends javax.swing.JFrame {
 //                                        && last_t.explicit_color == t.explicit_color) {
 //                                    this.setIcon(this.last_image_icon);
 //                                } else {
-                                        BufferedImage bi
-                                        = new BufferedImage(10, 10, BufferedImage.TYPE_3BYTE_BGR);
-                                        Graphics g = bi.getGraphics();
-                                        g.setColor(Color.WHITE);
-                                        g.fillRect(0, 0, 10, 10);
-                                        if (t.hidden) {
-                                            g.setColor(Color.GRAY);
-                                        } else {
-                                            g.setColor(t.pointColor);
-                                        }
-                                        g.fillOval(1, 1, 8, 8);
-                                        bi.flush();
-                                        ImageIcon II = new ImageIcon(bi);
-                                        this.setText(t.name + " [" + t.data.size() + "]");
-                                        this.setIcon(II);
-                                        this.last_t = t;
-                                        this.last_image_icon = II;
+                        BufferedImage bi
+                                = new BufferedImage(10, 10, BufferedImage.TYPE_3BYTE_BGR);
+                        Graphics g = bi.getGraphics();
+                        g.setColor(Color.WHITE);
+                        g.fillRect(0, 0, 10, 10);
+                        if (t.hidden) {
+                            g.setColor(Color.GRAY);
+                        } else {
+                            g.setColor(t.pointColor);
+                        }
+                        g.fillOval(1, 1, 8, 8);
+                        bi.flush();
+                        ImageIcon II = new ImageIcon(bi);
+                        this.setText(t.name + " [" + t.data.size() + "]");
+                        this.setIcon(II);
+                        this.last_t = t;
+                        this.last_image_icon = II;
 //                                }
-                                    }
-                                } catch (Exception e) {
-                                    //e.printStackTrace();
-                                }
-                                return this;
-                            }
-                };
+                    }
+                } catch (Exception e) {
+                    //e.printStackTrace();
+                }
+                return this;
+            }
+        };
         this.jTree1.setCellRenderer(renderer);
         this.jCheckBoxMenuItemGtOnTop.setSelected(s.gt_on_top);
         this.updateMenuLabels();
@@ -384,7 +385,7 @@ public class HTPM_JFrame extends javax.swing.JFrame {
             this.updateDisplayCoordMenuItems();
             this.jCheckBoxMenuItemShowDisconnected.setSelected(s.show_disconnected_points);
             this.drawPanel1.show_disconnected = s.show_disconnected_points;
-            
+
         }
     }
 
@@ -532,10 +533,10 @@ public class HTPM_JFrame extends javax.swing.JFrame {
         public boolean use_gray_tracks = true;
 
         public String displayCoordType = "XY";
-        
+
         public boolean show_disconnected_points = false;
     }
-    
+
     /**
      * Single instance of class to user settable settings that should persist in
      * the users ".htpm" file in their home directory. Most likely only the
@@ -724,6 +725,7 @@ public class HTPM_JFrame extends javax.swing.JFrame {
         jMenuItemManageLiveConnections = new javax.swing.JMenuItem();
         jCheckBoxMenuItemPromptLogData = new javax.swing.JCheckBoxMenuItem();
         jCheckBoxMenuItemPromptForTransforms = new javax.swing.JCheckBoxMenuItem();
+        jCheckBoxMenuItemUnaffiliatedMarkers = new javax.swing.JCheckBoxMenuItem();
         jMenu2 = new javax.swing.JMenu();
         jMenuItemROI = new javax.swing.JMenuItem();
         jMenuItemEditTimeProj = new javax.swing.JMenuItem();
@@ -1272,9 +1274,11 @@ public class HTPM_JFrame extends javax.swing.JFrame {
         });
         jMenuConnections.add(jCheckBoxMenuItemPromptLogData);
 
-        jCheckBoxMenuItemPromptForTransforms.setSelected(true);
         jCheckBoxMenuItemPromptForTransforms.setText("Prompt for Transforms");
         jMenuConnections.add(jCheckBoxMenuItemPromptForTransforms);
+
+        jCheckBoxMenuItemUnaffiliatedMarkers.setText("Log/Display Unaffiliated Markers");
+        jMenuConnections.add(jCheckBoxMenuItemUnaffiliatedMarkers);
 
         jMenuBar1.add(jMenuConnections);
 
@@ -2086,14 +2090,12 @@ public class HTPM_JFrame extends javax.swing.JFrame {
                                 true, o);
                         gtlist.addAll(list_to_add);
                     }
+                } else if (null == sutlist) {
+                    sutlist = LoadFile(o.filename, Color.blue, false, o);
                 } else {
-                    if (null == sutlist) {
-                        sutlist = LoadFile(o.filename, Color.blue, false, o);
-                    } else {
-                        List<Track> list_to_add = LoadFile(o.filename, Color.blue,
-                                true, o);
-                        sutlist.addAll(list_to_add);
-                    }
+                    List<Track> list_to_add = LoadFile(o.filename, Color.blue,
+                            true, o);
+                    sutlist.addAll(list_to_add);
                 }
                 updateEverything();
             }
@@ -2999,7 +3001,6 @@ public class HTPM_JFrame extends javax.swing.JFrame {
 //            ps.close();
 //        }
 //    }
-
     static public void loadDefaultTransform(File f) {
         CsvParseOptions.DEFAULT.transform = loadTransformFile(f);
     }
@@ -3385,6 +3386,7 @@ public class HTPM_JFrame extends javax.swing.JFrame {
      * @return whether displays and/or logs need to be updated.
      */
     public boolean UpdateOptitrackRigidBody(OptitrackUDPStream.RigidBody rb,
+            DataFrame df,
             PrintStream ps) throws Exception {
         boolean point_updated = false;
         Point3D pt = rb.pos;
@@ -3442,6 +3444,9 @@ public class HTPM_JFrame extends javax.swing.JFrame {
             return false;
         }
         TrackPoint tp = new TrackPoint(pt);
+        if (null != df) {
+            tp.setLatency(df.latency);
+        }
 //        System.out.println("pre transfrom tp = " + tp);
         if (ods.apply_transform) {
             tp.applyTransform(ods.transform);
@@ -3480,54 +3485,56 @@ public class HTPM_JFrame extends javax.swing.JFrame {
                 || null == ods.last_frame_recieved) {
             return;
         }
-        try {
-            double time = System.currentTimeMillis() * 1e-3;
-            if (null != ods.last_frame_recieved.other_markers_array
-                    && ods.last_frame_recieved.other_markers_array.length > 0) {
-                if (null == this.optitrack_unaffiliated_track) {
-                    this.optitrack_unaffiliated_track = new Track();
-                    this.optitrack_unaffiliated_track.name = "optitrack_unaffiliated_track";
-                    this.optitrack_unaffiliated_track.source = "optitrack";
-                    this.optitrack_unaffiliated_track.disconnected = true;
-                    if (null == optitrack_tracks) {
-                        optitrack_tracks = new LinkedList<Track>();
+        if (this.jCheckBoxMenuItemUnaffiliatedMarkers.isSelected()) {
+            try {
+                double time = System.currentTimeMillis() * 1e-3;
+                if (null != ods.last_frame_recieved.other_markers_array
+                        && ods.last_frame_recieved.other_markers_array.length > 0) {
+                    if (null == this.optitrack_unaffiliated_track) {
+                        this.optitrack_unaffiliated_track = new Track();
+                        this.optitrack_unaffiliated_track.name = "optitrack_unaffiliated_track";
+                        this.optitrack_unaffiliated_track.source = "optitrack";
+                        this.optitrack_unaffiliated_track.disconnected = true;
+                        if (null == optitrack_tracks) {
+                            optitrack_tracks = new LinkedList<Track>();
+                        }
+                        optitrack_tracks.add(optitrack_unaffiliated_track);
+                        if (this.optitrack_is_ground_truth) {
+                            if (null == gtlist) {
+                                gtlist = new LinkedList<Track>();
+                            }
+                            gtlist.add(optitrack_unaffiliated_track);
+                        } else {
+                            if (null == sutlist) {
+                                sutlist = new LinkedList<Track>();
+                            }
+                            sutlist.add(optitrack_unaffiliated_track);
+                        }
                     }
-                    optitrack_tracks.add(optitrack_unaffiliated_track);
-                    if (this.optitrack_is_ground_truth) {
-                        if (null == gtlist) {
-                            gtlist = new LinkedList<Track>();
+                    for (Point3D p3d : ods.last_frame_recieved.other_markers_array) {
+                        TrackPoint tp = new TrackPoint(p3d);
+                        tp.time = time;
+                        if (ods.apply_transform) {
+                            tp.applyTransform(ods.transform);
+                            optitrack_unaffiliated_track.setTransform(ods.transform);
                         }
-                        gtlist.add(optitrack_unaffiliated_track);
-                    } else {
-                        if (null == sutlist) {
-                            sutlist = new LinkedList<Track>();
+                        if (null == optitrack_unaffiliated_track.data) {
+                            optitrack_unaffiliated_track.data = new ArrayList<TrackPoint>();
+                            optitrack_unaffiliated_track.disconnected = true;
                         }
-                        sutlist.add(optitrack_unaffiliated_track);
+                        optitrack_unaffiliated_track.data.add(tp);
+                        if (null != this.optitrack_print_stream) {
+                            this.printOneLine(tp, optitrack_unaffiliated_track.name, optitrack_print_stream);
+                        }
+                        if (optitrack_unaffiliated_track.data.size() > 5000) {
+                            optitrack_unaffiliated_track.data.remove(0);
+                        }
+                        optitrack_unaffiliated_track.cur_time_index = optitrack_unaffiliated_track.data.size() - 1;
                     }
                 }
-                for (Point3D p3d : ods.last_frame_recieved.other_markers_array) {
-                    TrackPoint tp = new TrackPoint(p3d);
-                    tp.time = time;
-                    if (ods.apply_transform) {
-                        tp.applyTransform(ods.transform);
-                        optitrack_unaffiliated_track.setTransform(ods.transform);
-                    }
-                    if (null == optitrack_unaffiliated_track.data) {
-                        optitrack_unaffiliated_track.data = new ArrayList<TrackPoint>();
-                        optitrack_unaffiliated_track.disconnected = true;
-                    }
-                    optitrack_unaffiliated_track.data.add(tp);
-                    if (null != this.optitrack_print_stream) {
-                        this.printOneLine(tp, optitrack_unaffiliated_track.name, optitrack_print_stream);
-                    }
-                    if (optitrack_unaffiliated_track.data.size() > 5000) {
-                        optitrack_unaffiliated_track.data.remove(0);
-                    }
-                    optitrack_unaffiliated_track.cur_time_index = optitrack_unaffiliated_track.data.size() - 1;
-                }
+            } catch (Exception exception) {
+                exception.printStackTrace();
             }
-        } catch (Exception exception) {
-            exception.printStackTrace();
         }
         if (null == ods
                 || null == ods.last_frame_recieved
@@ -3535,12 +3542,14 @@ public class HTPM_JFrame extends javax.swing.JFrame {
             return;
         }
         boolean point_updated = false;
-        drawPanel1.setLabel("latency = "+ods.last_frame_recieved.latency +" ms");
+        drawPanel1.setLabel("latency = " + ods.last_frame_recieved.latency + " ms");
         for (OptitrackUDPStream.RigidBody rb : ods.last_frame_recieved.rigid_body_array) {
             try {
-                point_updated = point_updated
-                        || this.UpdateOptitrackRigidBody(rb,
+                boolean new_update
+                        = this.UpdateOptitrackRigidBody(rb,
+                                ods.last_frame_recieved,
                                 this.optitrack_print_stream);
+                point_updated = point_updated || new_update;
             } catch (Exception ex) {
                 ods.close();
                 ods = null;
@@ -3653,7 +3662,7 @@ public class HTPM_JFrame extends javax.swing.JFrame {
     }
 
     public boolean ConnectToOptitrack(final String server, final boolean use_multicast, int major, int minor) {
-        ods = new OptitrackUDPStream(server, use_multicast,major,minor);
+        ods = new OptitrackUDPStream(server, use_multicast, major, minor);
         ods.transform_filename = s.optitrack_trasform_filename;
         if (this.jCheckBoxMenuItemPromptForTransforms.isSelected()) {
             TransformMatrixJPanel.showDialog(this, ods);
@@ -3692,10 +3701,10 @@ public class HTPM_JFrame extends javax.swing.JFrame {
             stopRecording();
         }
         if (this.jCheckBoxMenuItemOptitrack.isSelected()) {
-            
+
             OptitrackSetupJPanel panel = OptitrackSetupJPanel.showDialog(this);
             OptitrackSetupOptions options = panel.getOptions();
-            if(panel.isCancelled() || options == null) {
+            if (panel.isCancelled() || options == null) {
                 this.jCheckBoxMenuItemOptitrack.setSelected(false);
                 return;
             }
@@ -3719,12 +3728,12 @@ public class HTPM_JFrame extends javax.swing.JFrame {
             int netNatMajor = 2;
             int netNatMinor = 6;
             int pindex = netNatStringVersion.indexOf('.');
-            if(pindex > 0) {
+            if (pindex > 0) {
                 netNatMajor = Integer.parseInt(netNatStringVersion.substring(0, pindex));
-                netNatMinor = Integer.parseInt(netNatStringVersion.substring(pindex+1).trim());
+                netNatMinor = Integer.parseInt(netNatStringVersion.substring(pindex + 1).trim());
             }
             if (null != server) {
-                if (!this.ConnectToOptitrack(server,options.isMulticast(),netNatMajor,netNatMinor)) {
+                if (!this.ConnectToOptitrack(server, options.isMulticast(), netNatMajor, netNatMinor)) {
                     return;
                 }
 //                boolean start_recording = AskBoolean("Start recording live data?",
@@ -3769,7 +3778,8 @@ public class HTPM_JFrame extends javax.swing.JFrame {
                 + tp.ROI_height + ","
                 + tp.confidence + ","
                 + tp.radius + ","
-                + tp.source);
+                + tp.source + ","
+                + tp.getLatency());
     }
     static boolean check_times = true;
 
@@ -3844,7 +3854,7 @@ public class HTPM_JFrame extends javax.swing.JFrame {
     }
 
     public static void printCsvHeader(PrintStream ps) {
-        ps.println("timestamp,personID,personcentroidX,personcentroidY,personcentroidZ,boundingboxtopcenterX,boundingboxtopcenterY,boundingboxtopcenterZ,Xvelocity,Yvelocity,Zvelocity,ROIwidth,ROIheight,confidence,radius,source");
+        ps.println("timestamp,personID,personcentroidX,personcentroidY,personcentroidZ,boundingboxtopcenterX,boundingboxtopcenterY,boundingboxtopcenterZ,Xvelocity,Yvelocity,Zvelocity,ROIwidth,ROIheight,confidence,radius,source,latency");
     }
 
     /**
@@ -3916,7 +3926,7 @@ public class HTPM_JFrame extends javax.swing.JFrame {
                         for (int i = 0; i < HTPM_JFrame.gtlist.size(); i++) {
                             try {
                                 Track track = HTPM_JFrame.gtlist.get(i);
-                                if(track.disconnected && !HTPM_JFrame.s.show_disconnected_points) {
+                                if (track.disconnected && !HTPM_JFrame.s.show_disconnected_points) {
                                     fi.num_tracks--;
                                     continue;
                                 }
@@ -3957,11 +3967,11 @@ public class HTPM_JFrame extends javax.swing.JFrame {
                             for (int i = 0; i < HTPM_JFrame.gtlist.size(); i++) {
                                 try {
                                     Track track = HTPM_JFrame.gtlist.get(i);
-                                if(track.disconnected && !HTPM_JFrame.s.show_disconnected_points) {
-                                    fi.num_tracks--;
-                                    continue;
-                                }
-                                fi.num_points += track.data.size();
+                                    if (track.disconnected && !HTPM_JFrame.s.show_disconnected_points) {
+                                        fi.num_tracks--;
+                                        continue;
+                                    }
+                                    fi.num_points += track.data.size();
                                 } catch (Exception e) {
                                     // ignore
                                 }
@@ -4018,7 +4028,7 @@ public class HTPM_JFrame extends javax.swing.JFrame {
                         for (int i = 0; i < HTPM_JFrame.sutlist.size(); i++) {
                             try {
                                 Track track = HTPM_JFrame.sutlist.get(i);
-                                if(track.disconnected && !HTPM_JFrame.s.show_disconnected_points) {
+                                if (track.disconnected && !HTPM_JFrame.s.show_disconnected_points) {
                                     fi.num_tracks--;
                                     continue;
                                 }
@@ -4059,7 +4069,7 @@ public class HTPM_JFrame extends javax.swing.JFrame {
                             for (int i = 0; i < HTPM_JFrame.sutlist.size(); i++) {
                                 try {
                                     Track track = HTPM_JFrame.sutlist.get(i);
-                                    if(track.disconnected && !HTPM_JFrame.s.show_disconnected_points) {
+                                    if (track.disconnected && !HTPM_JFrame.s.show_disconnected_points) {
                                         fi.num_tracks--;
                                         continue;
                                     }
@@ -4111,7 +4121,7 @@ public class HTPM_JFrame extends javax.swing.JFrame {
                                 medianTimeOffset(gtfi.filename, sutfi.filename),
                                 dateString(gtfi.start_time), gtfi.start_time, gtfi.end_time,
                                 (gtfi.end_time - gtfi.start_time),
-                                sutfi.start_time, sutfi.end_time, 
+                                sutfi.start_time, sutfi.end_time,
                                 (sutfi.end_time - sutfi.start_time),
                                 gtfi.num_tracks, sutfi.num_tracks,
                                 gtfi.num_points, sutfi.num_points);
@@ -4316,7 +4326,7 @@ public class HTPM_JFrame extends javax.swing.JFrame {
                     = new plotterJFrame();
             plotter_frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
             for (Track t : tracks) {
-                if(t.disconnected) {
+                if (t.disconnected) {
                     continue;
                 }
                 PlotData pd = new PlotData();
@@ -4325,8 +4335,8 @@ public class HTPM_JFrame extends javax.swing.JFrame {
                     plotter_frame.AddPlot(pd);
                     double last_t = Double.NEGATIVE_INFINITY;
                     for (TrackPoint tp : t.data) {
-                        if(tp.time< last_t) {
-                            System.err.println("(tp.time - last_t) = "+(tp.time-last_t));
+                        if (tp.time < last_t) {
+                            System.err.println("(tp.time - last_t) = " + (tp.time - last_t));
                             break;
                         }
                         last_t = tp.time;
@@ -4342,11 +4352,11 @@ public class HTPM_JFrame extends javax.swing.JFrame {
                 plotter_frame.AddPlot(pd);
                 double last_t = Double.NEGATIVE_INFINITY;
                 for (TrackPoint tp : t.data) {
-                    if(tp.time< last_t) {
-                            System.err.println("(tp.time - last_t) = "+(tp.time-last_t));
-                            break;
-                        }
-                        last_t = tp.time;
+                    if (tp.time < last_t) {
+                        System.err.println("(tp.time - last_t) = " + (tp.time - last_t));
+                        break;
+                    }
+                    last_t = tp.time;
                     plotter_frame.AddPointToPlot(pd, tp.time,
                             Math.sqrt(tp.computed_vel_x * tp.computed_vel_x + tp.computed_vel_y * tp.computed_vel_y),
                             true);
@@ -5392,21 +5402,17 @@ public class HTPM_JFrame extends javax.swing.JFrame {
             t.selected = false;
             if (null != t.explicitPointColor) {
                 t.pointColor = t.explicitPointColor;
+            } else if (t.is_groundtruth) {
+                t.pointColor = Color.red;
             } else {
-                if (t.is_groundtruth) {
-                    t.pointColor = Color.red;
-                } else {
-                    t.pointColor = Color.blue;
-                }
+                t.pointColor = Color.blue;
             }
             if (null != t.explicitLineColor) {
                 t.lineColor = t.explicitLineColor;
+            } else if (t.is_groundtruth) {
+                t.lineColor = Color.red;
             } else {
-                if (t.is_groundtruth) {
-                    t.lineColor = Color.red;
-                } else {
-                    t.lineColor = Color.blue;
-                }
+                t.lineColor = Color.blue;
             }
 
             if (null != t.data) {
@@ -5706,7 +5712,7 @@ public class HTPM_JFrame extends javax.swing.JFrame {
         }
     }//GEN-LAST:event_jMenuItemFindMatchesActionPerformed
 
-    
+
     private void jMenuItemOpenMatchFileActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemOpenMatchFileActionPerformed
         try {
             JFileChooser chooser = new JFileChooser();
@@ -5733,24 +5739,24 @@ public class HTPM_JFrame extends javax.swing.JFrame {
         }
     }//GEN-LAST:event_jMenuItemOpenMatchFileActionPerformed
 
-    public static void transformFile(File f, double transform[],CsvParseOptions o) throws Exception {
-        File transformDir = new File(f.getParentFile(),"transformed");
+    public static void transformFile(File f, double transform[], CsvParseOptions o) throws Exception {
+        File transformDir = new File(f.getParentFile(), "transformed");
         transformDir.mkdirs();
-        File transformedFile = new File(transformDir,f.getName()+".transformed.csv");
-        System.out.println("transformed "+f+ " to " + transformedFile);
-        try(BufferedReader br = new BufferedReader(new FileReader(f));
+        File transformedFile = new File(transformDir, f.getName() + ".transformed.csv");
+        System.out.println("transformed " + f + " to " + transformedFile);
+        try (BufferedReader br = new BufferedReader(new FileReader(f));
                 PrintStream ps = new PrintStream(new FileOutputStream(transformedFile))) {
-                printCsvHeader(ps);
-                String line = br.readLine();
-                while(null != (line = br.readLine())) {
-                    TrackPoint pt = parseTrackPointLine(line, o);
-                    if (null != pt) {
-                        printOneLine(pt,pt.name,ps);
-                    }
+            printCsvHeader(ps);
+            String line = br.readLine();
+            while (null != (line = br.readLine())) {
+                TrackPoint pt = parseTrackPointLine(line, o);
+                if (null != pt) {
+                    printOneLine(pt, pt.name, ps);
                 }
+            }
         }
     }
-    
+
     private void jMenuItemTransformFileSetActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemTransformFileSetActionPerformed
         double orig_transform[] = CsvParseOptions.DEFAULT.transform;
         try {
@@ -6784,14 +6790,12 @@ public class HTPM_JFrame extends javax.swing.JFrame {
                             h.y = 10;
                             h.yaw = -r.nextDouble() * Math.PI;
                         }
+                    } else if (r.nextBoolean()) {
+                        h.x = 0;
+                        h.yaw = r.nextDouble() * Math.PI - Math.PI / 2;
                     } else {
-                        if (r.nextBoolean()) {
-                            h.x = 0;
-                            h.yaw = r.nextDouble() * Math.PI - Math.PI / 2;
-                        } else {
-                            h.x = 10;
-                            h.yaw = r.nextDouble() * Math.PI + Math.PI / 2;
-                        }
+                        h.x = 10;
+                        h.yaw = r.nextDouble() * Math.PI + Math.PI / 2;
                     }
                     h.speed = r.nextDouble() * 2.0;
                     h.radius = r.nextDouble() * 0.5 + 0.35;
@@ -7201,7 +7205,7 @@ public class HTPM_JFrame extends javax.swing.JFrame {
                     if (i < fargs.length - 2
                             && fargs[i].compareTo("--connectOptiTrack") == 0) {
                         main_frame.jCheckBoxMenuItemPromptForTransforms.setSelected(false);
-                        main_frame.ConnectToOptitrack(fargs[i + 1], Boolean.valueOf(fargs[i + 2]),2,6);
+                        main_frame.ConnectToOptitrack(fargs[i + 1], Boolean.valueOf(fargs[i + 2]), 2, 6);
                         i += 2;
                     }
                     if (i < fargs.length - 1) {
@@ -7299,6 +7303,7 @@ public class HTPM_JFrame extends javax.swing.JFrame {
     private javax.swing.JCheckBoxMenuItem jCheckBoxMenuItemShowFutureTracks;
     private javax.swing.JCheckBoxMenuItem jCheckBoxMenuItemShowLabels;
     private javax.swing.JCheckBoxMenuItem jCheckBoxMenuItemShowOnlySelected;
+    private javax.swing.JCheckBoxMenuItem jCheckBoxMenuItemUnaffiliatedMarkers;
     private javax.swing.JCheckBox jCheckBoxRecording;
     private javax.swing.JDialog jDialog1;
     private javax.swing.JLabel jLabel2;

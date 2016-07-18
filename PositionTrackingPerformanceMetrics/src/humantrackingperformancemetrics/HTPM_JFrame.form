@@ -333,8 +333,12 @@
             </MenuItem>
             <MenuItem class="javax.swing.JCheckBoxMenuItem" name="jCheckBoxMenuItemPromptForTransforms">
               <Properties>
-                <Property name="selected" type="boolean" value="true"/>
                 <Property name="text" type="java.lang.String" value="Prompt for Transforms"/>
+              </Properties>
+            </MenuItem>
+            <MenuItem class="javax.swing.JCheckBoxMenuItem" name="jCheckBoxMenuItemUnaffiliatedMarkers">
+              <Properties>
+                <Property name="text" type="java.lang.String" value="Log/Display Unaffiliated Markers"/>
               </Properties>
             </MenuItem>
           </SubComponents>

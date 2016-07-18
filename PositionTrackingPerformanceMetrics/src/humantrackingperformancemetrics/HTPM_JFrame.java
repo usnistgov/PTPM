@@ -3692,20 +3692,30 @@ public class HTPM_JFrame extends javax.swing.JFrame {
             stopRecording();
         }
         if (this.jCheckBoxMenuItemOptitrack.isSelected()) {
-            final String server = JOptionPane.showInputDialog(this, "Optitrack IP Address",
-                    s.optitrack_host);
-            optitrack_is_ground_truth
-                    = AskBoolean("Use Optitrack as Ground Truth?",
-                            optitrack_is_ground_truth);
-            System.out.println("optitrack_is_ground_truth = "
-                    + optitrack_is_ground_truth);
-            int multicast_response = JOptionPane.showConfirmDialog(this, "Use multicast?");
-            if (multicast_response == JOptionPane.CANCEL_OPTION) {
+            
+            OptitrackSetupJPanel panel = OptitrackSetupJPanel.showDialog(this);
+            OptitrackSetupOptions options = panel.getOptions();
+            if(panel.isCancelled() || options == null) {
                 this.jCheckBoxMenuItemOptitrack.setSelected(false);
                 return;
             }
+//            final String server = JOptionPane.showInputDialog(this, "Optitrack IP Address",
+//                    s.optitrack_host);
+//            optitrack_is_ground_truth
+//                    = AskBoolean("Use Optitrack as Ground Truth?",
+//                            optitrack_is_ground_truth);
+            final String server = options.getHost();
+            optitrack_is_ground_truth = options.isGroundtruth();
+            System.out.println("optitrack_is_ground_truth = "
+                    + optitrack_is_ground_truth);
+//            int multicast_response = JOptionPane.showConfirmDialog(this, "Use multicast?");
+//            if (options.isMulticast()) {
+//                this.jCheckBoxMenuItemOptitrack.setSelected(false);
+//                return;
+//            }
             this.jCheckBoxRecording.setEnabled(true);
-            final String netNatStringVersion = JOptionPane.showInputDialog(this,"Optitrack NetNat Version","2.10");
+//            final String netNatStringVersion = JOptionPane.showInputDialog(this,"Optitrack NetNat Version","2.10");
+            final String netNatStringVersion = options.getVersionString();
             int netNatMajor = 2;
             int netNatMinor = 6;
             int pindex = netNatStringVersion.indexOf('.');
@@ -3714,12 +3724,12 @@ public class HTPM_JFrame extends javax.swing.JFrame {
                 netNatMinor = Integer.parseInt(netNatStringVersion.substring(pindex+1).trim());
             }
             if (null != server) {
-                if (!this.ConnectToOptitrack(server, multicast_response == JOptionPane.YES_OPTION,netNatMajor,netNatMinor)) {
+                if (!this.ConnectToOptitrack(server,options.isMulticast(),netNatMajor,netNatMinor)) {
                     return;
                 }
-                boolean start_recording = AskBoolean("Start recording live data?",
-                        false);
-                if (start_recording) {
+//                boolean start_recording = AskBoolean("Start recording live data?",
+//                        false);
+                if (options.isStartRecording()) {
                     startRecording();
                 }
             }

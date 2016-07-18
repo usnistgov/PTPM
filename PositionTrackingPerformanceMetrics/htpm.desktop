@@ -1,0 +1,8 @@
+#!/usr/bin/env xdg-open
+[Desktop Entry]
+Version=1.0
+Name=Human Tracking Performance Metrics
+Icon=/usr/local/HumanTrackingPerformanceMetrics//src/htpm_resources/cropped_screenshot.png
+Exec=/usr/bin/java -jar /usr/local/HumanTrackingPerformanceMetrics//dist/HumanTrackingPerformanceMetrics.jar
+Type=Application
+Terminal=true

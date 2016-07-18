@@ -3514,6 +3514,7 @@ public class HTPM_JFrame extends javax.swing.JFrame {
                     for (Point3D p3d : ods.last_frame_recieved.other_markers_array) {
                         TrackPoint tp = new TrackPoint(p3d);
                         tp.time = time;
+                        tp.setLatency(ods.last_frame_recieved.latency);
                         if (ods.apply_transform) {
                             tp.applyTransform(ods.transform);
                             optitrack_unaffiliated_track.setTransform(ods.transform);

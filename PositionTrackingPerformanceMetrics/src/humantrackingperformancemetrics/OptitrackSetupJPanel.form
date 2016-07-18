@@ -100,6 +100,7 @@
     </Component>
     <Component class="javax.swing.JCheckBox" name="jCheckBoxStartRecording">
       <Properties>
+        <Property name="selected" type="boolean" value="true"/>
         <Property name="text" type="java.lang.String" value="Start Recording Immediately"/>
       </Properties>
     </Component>

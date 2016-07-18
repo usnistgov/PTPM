@@ -103,6 +103,7 @@ public class OptitrackSetupJPanel extends javax.swing.JPanel {
 
         jCheckBoxMulticast.setText("Multicast");
 
+        jCheckBoxStartRecording.setSelected(true);
         jCheckBoxStartRecording.setText("Start Recording Immediately");
 
         jButtonCancel.setText("Cancel");

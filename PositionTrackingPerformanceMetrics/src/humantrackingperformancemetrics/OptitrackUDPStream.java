@@ -5,9 +5,7 @@ import java.awt.event.ActionListener;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
-import java.net.InetSocketAddress;
 import java.net.MulticastSocket;
-import java.net.NetworkInterface;
 import java.util.LinkedList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -325,6 +323,9 @@ public class OptitrackUDPStream extends MonitoredConnection {
      */
     public class DataFrame {
 
+        public double localRecvTime;
+        public double timeSinceLastRecvTime;
+        
         /**
          * frame number, seems to not to be implemented properly
          */
@@ -767,14 +768,14 @@ public class OptitrackUDPStream extends MonitoredConnection {
 
         // 2.7 and later - increased from single to double precision
         if (((major == 2) && (minor >= 7)) || (major > 2)) {
-            df.timestamp = readFloatFromByteArray(data, offset);
+            df.timestamp = readDoubleFromByteArray(data, offset);
             offset += 8;
         } else {
             float fTemp = readFloatFromByteArray(data, offset);
             offset += 4;
             df.timestamp = (double) fTemp;
         }
-        if (debug) {
+        if (true) {
             System.out.println("df.timestamp = " + df.timestamp);
         }
         // frame params
@@ -797,7 +798,7 @@ public class OptitrackUDPStream extends MonitoredConnection {
             System.out.println("df.eod = " + df.eod);
         }
         offset += 4;
-        if (debug) {
+        if (true) {
             System.out.println("offset at end of data unpackFrameData = " + offset+", nDataBytes="+nDataBytes+",data.length="+data.length);
             System.out.println("");
             System.out.println("");

@@ -128,6 +128,13 @@ public class TrackPoint extends Point3D implements Cloneable {
 
     public String source = null;
 
+    /* 
+        If available the orientation is expected to be 
+        an array of 4 floats in quaternion representation 
+        with the s or w elemeent at the end eg qx,qy,qz,qw.
+    */
+    public float orientation[] = null;
+    
     @Override
     public TrackPoint clone() {
         TrackPoint pt = new TrackPoint(orig_x, orig_y, orig_z,

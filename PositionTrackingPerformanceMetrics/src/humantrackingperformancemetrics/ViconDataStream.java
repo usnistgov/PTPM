@@ -18,18 +18,17 @@
  * versions bear some notice that they have been modified.
  * 
  */
-
 package humantrackingperformancemetrics;
 
+import java.awt.Color;
+import java.io.PrintStream;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import vicon.client.Client;
-import vicon.client.Output_Connect;
-import vicon.client.Output_GetSegmentCount;
-import vicon.client.Output_GetSubjectCount;
-import vicon.client.StringResult;
-import vicon.client.ViconClient;
-import static vicon.client.ViconDataStreamSDK.CPP.Result.Enum.Success;
+import vicontojava.ViconClient;
 
 /**
  *
@@ -40,96 +39,347 @@ public class ViconDataStream extends MonitoredConnection {
     static {
         System.loadLibrary("ViconJavaSwigLibrary");
     }
-    
-    private Client client = null;
+
+    private ViconClient client = null;
     private final String host;
     private Thread thread;
-    
+    private List<TrackPoint> lastFrameList = null;
+    private long frameNumber;
+    private double latency;
+
     @Override
     public void run() {
         try {
             System.out.println("ViconDataStream thread started.");
-            client = new Client();
-            Output_Connect outputConnect = client.Connect(host + ":801");
-            System.out.println("outputConnect.getResult() = " + outputConnect.getResult());
-            client.EnableCentroidData();
-            client.EnableMarkerData();
-            client.EnableSegmentData();
-            client.EnableUnlabeledMarkerData();
+            client = new ViconClient();
+            client.connect(host + ":801");
+            client.enableCentroidData();
+            client.enableMarkerData();
+            client.enableSegmentData();
+            client.enableUnlabeledMarkerData();
             long lastFrameNumber = -1;
-            while (!Thread.currentThread().isInterrupted()
-                    && client.GetFrame().getResult() == Success) {
-                long frameNumber = client.GetFrameNumber().getFrameNumber();
+            while (!Thread.currentThread().isInterrupted()) {
+                List<TrackPoint> frameList = new ArrayList<>();
+                client.getFrame();
+                long frameNumber = client.getFrameNumber();
                 if (frameNumber == lastFrameNumber) {
                     Thread.sleep(20);
                     continue;
                 }
-                long diff= frameNumber - lastFrameNumber;
-                if(lastFrameNumber > 0 && diff > 1) {
+                long diff = frameNumber - lastFrameNumber;
+                if (lastFrameNumber > 0 && diff > 1) {
                     System.out.println("frameNumber = " + frameNumber);
                     System.out.println("lastFrameNumber = " + lastFrameNumber);
                     System.out.println("diff = " + diff);
-                    setMissedFrames(getMissedFrames()+(diff-1));
+                    setMissedFrames(getMissedFrames() + (diff - 1));
                 }
                 lastFrameNumber = frameNumber;
-                Output_GetSubjectCount output_GetSubjectCount = client.GetSubjectCount();
-                if(output_GetSubjectCount.getResult() == Success) {
-                    long subjectCount = output_GetSubjectCount.getSubjectCount();
-                    for(int subjectIndex = 0; subjectIndex < subjectCount; subjectIndex++) {
-                        StringResult sr = ViconClient.getSubjectName(client, subjectIndex);
-                        String name = sr.getStdString();
-                        sr.delete();
-                        Output_GetSegmentCount output_GetSegmentCount = client.GetSegmentCount(name);
-                        if(output_GetSegmentCount.getResult() == Success) {
-                            long segmentCount = output_GetSegmentCount.getSegmentCount();
-                            for(int segmentIndex =0; segmentIndex < segmentCount; segmentIndex++) {
-                                sr.
-                            }
+                double latency = client.getLatencyTotal();
+                long subjectCount = client.getSubjectCount();
+                for (int subjectIndex = 0; subjectIndex < subjectCount; subjectIndex++) {
+                    String subjectName = client.getSubjectName(subjectIndex);
+                    long segmentCount = client.getSegmentCount(subjectName);
+                    for (int segmentIndex = 0; segmentIndex < segmentCount; segmentIndex++) {
+                        String segmentName = client.getSegmentName(subjectName, subjectIndex);
+                        if (client.isOccluded(subjectName, segmentName)) {
+                            continue;
                         }
+                        double trans3[] = client.getSegmentGlobalTranslation(subjectName, segmentName);
+                        double quat4[] = client.getSegmentGlobalRotationQuaternion(subjectName, segmentName);
+                        TrackPoint tp = new TrackPoint(trans3[0], trans3[1], trans3[2], 0, 0, 0);
+                        tp.setLatency(latency);
+                        tp.source = "Vicon_" + host;
+                        if (!subjectName.equals(segmentName)) {
+                            tp.name = subjectName + "_" + segmentName;
+                        } else {
+                            tp.name = subjectName;
+                        }
+                        tp.orientation = new float[4];
+                        for (int quatIndex = 0; quatIndex < 4; quatIndex++) {
+                            tp.orientation[quatIndex] = (float) quat4[quatIndex];
+                        }
+                        frameList.add(tp);
                     }
                 }
+                TrackPoint tp = new TrackPoint(1.0, 2.0, 3.0, 0, 0, 0);
+                tp.setLatency(latency);
+                tp.source = "Vicon_" + host;
+                tp.name = "testPoint";
+                frameList.add(tp);
+                synchronized (this) {
+                    this.lastFrameList = frameList;
+                    this.frameNumber = frameNumber;
+                    this.latency = latency;
+                }
                 this.incUpdates();
+                if (null != listeners) {
+                    for (Runnable r : listeners) {
+                        r.run();
+                    }
+                }
             }
         } catch (Exception exception) {
             exception.printStackTrace();
         }
     }
-    
-    
+
     public ViconDataStream(String host) {
         this.host = host;
-        setSource("Vicon:"+host);
+        setSource("Vicon:" + host);
         thread = new Thread(this);
         thread.setDaemon(true);
         thread.start();
     }
 
+    private double timeSinceLastRecvTime = -0.001;
+    private double localRecvTime = -0.001;
+    private double lastLocalRecvTime = -0.001;
+    private double firstUpdateTime = -0.001;
+    private int updates = 0;
+
+    private final TrackPoint nanTrackPoint = new TrackPoint(Double.NaN, Double.NaN, Double.NaN, Double.NaN, Double.NaN, Double.NaN);
+
+    @Override
+    public void updateData(ConnectionUpdate update) throws Exception {
+        double time = System.currentTimeMillis() * 1e-3;
+        timeSinceLastRecvTime = time - lastLocalRecvTime;
+        localRecvTime = time;
+        lastLocalRecvTime = time;
+        PrintStream optitrack_print_stream = update.getPrintStream();
+        List<TrackPoint> frameList = null;
+        long frameNumber = -1;
+        double latency = Double.NaN;
+        synchronized (this) {
+            frameList = this.lastFrameList;
+            frameNumber = this.frameNumber;
+            latency = this.latency;
+        }
+        if (update.isAddNewFrameLines()) {
+            try {
+                nanTrackPoint.time = time;
+                update.getCsvLinePrinter().printOneLine(nanTrackPoint, "new_frame", frameNumber, localRecvTime, 0.0, update.getPrintStream());
+            } catch (Exception ex) {
+                Logger.getLogger(HTPM_JFrame.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+//        if (update.isAddUnaffiliatedMarkers()) {
+//            try {
+//                if (null != last_frame_recieved.other_markers_array
+//                        && last_frame_recieved.other_markers_array.length > 0) {
+//                    Track optitrack_unaffiliated_track = update.getUnaffiliatedTrack();
+//                    if (null == optitrack_unaffiliated_track) {
+//                        optitrack_unaffiliated_track = new Track();
+//                        optitrack_unaffiliated_track.name = "optitrack_unaffiliated_track";
+//                        optitrack_unaffiliated_track.source = "optitrack";
+//                        optitrack_unaffiliated_track.disconnected = true;
+//                        List<Track> optitrack_tracks = update.getCurrentDeviceTracks();
+//                        if (null == optitrack_tracks) {
+//                            optitrack_tracks = new LinkedList<Track>();
+//                        }
+//                        optitrack_tracks.add(optitrack_unaffiliated_track);
+//                        if (isGroundtruth()) {
+//                            List<Track> gtlist = update.getGtlist();
+//                            if (null == gtlist) {
+//                                gtlist = new LinkedList<Track>();
+//                                update.setGtlist(gtlist);
+//                            }
+//                            gtlist.add(optitrack_unaffiliated_track);
+//                        } else {
+//                            List<Track> sutlist = update.getGtlist();
+//                            if (null == sutlist) {
+//                                sutlist = new LinkedList<Track>();
+//                                update.setSutlist(sutlist);
+//                            }
+//                            sutlist.add(optitrack_unaffiliated_track);
+//                        }
+//                        update.setCurrentDeviceTracks(optitrack_tracks);
+//                    }
+//                    for (Point3D p3d : last_frame_recieved.other_markers_array) {
+//                        TrackPoint tp = new TrackPoint(p3d);
+//                        tp.time = time;
+//                        tp.setLatency(last_frame_recieved.latency);
+//                        if (isApplyTransform()) {
+//                            tp.applyTransform(getTransform());
+//                            optitrack_unaffiliated_track.setTransform(getTransform());
+//                        }
+//                        if (null == optitrack_unaffiliated_track.data) {
+//                            optitrack_unaffiliated_track.data = new ArrayList<TrackPoint>();
+//                            optitrack_unaffiliated_track.disconnected = true;
+//                        }
+//                        optitrack_unaffiliated_track.data.add(tp);
+//                        if (null != optitrack_print_stream) {
+//                            update.getCsvLinePrinter()
+//                                    .printOneLine(tp,
+//                                            optitrack_unaffiliated_track.name,
+//                                            last_frame_recieved.frameNumber,
+//                                            last_frame_recieved.timeSinceLastRecvTime,
+//                                            last_frame_recieved.timestamp,
+//                                            optitrack_print_stream);
+//                        }
+//                        if (optitrack_unaffiliated_track.data.size() > 5000) {
+//                            optitrack_unaffiliated_track.data.remove(0);
+//                        }
+//                        optitrack_unaffiliated_track.cur_time_index = optitrack_unaffiliated_track.data.size() - 1;
+//                    }
+//                }
+//            } catch (Exception exception) {
+//                exception.printStackTrace();
+//            }
+//        }
+        if (updates < 10) {
+            firstUpdateTime = time;
+        }
+        updates++;
+        boolean point_updated = false;
+        double timeCollecting = 1e-12 + time - firstUpdateTime;
+        double fps = (updates - 9) / timeCollecting;
+        update.setLabel(String.format("latency = %.3f ms,\n timeSinceLastRecvTime=%.3f,\n timeCollecting=%.3f,framesPerSecond= %.3f, updates=%d,numRigidBodies=%d",
+                latency,
+                timeSinceLastRecvTime,
+                timeCollecting,
+                fps,
+                updates,
+                frameList.size()));
+//        try {
+        for (TrackPoint tp : frameList) {
+            boolean new_update
+                    = updatePoint(update,tp);
+            point_updated = point_updated || new_update;
+
+        }
+//        } catch (Exception ex) {
+//            close();
+//            ods = null;
+//            jCheckBoxMenuItemOptitrackVicon.setSelected(false);
+//            stopRecording();
+//            Logger.getLogger(HTPM_JFrame.class.getName()).log(Level.SEVERE, null, ex);
+//            myShowMessageDialog(this,
+//                    "Failure encountered updating or recording optitrack data.");
+//        }
+    }
+
+    
+    private boolean updatePoint(ConnectionUpdate update, TrackPoint pt) throws Exception{
+        boolean point_updated = false;
+        
+        List<Track> allTracks = update.getAllTracks();
+        if (null == allTracks) {
+            allTracks = new ArrayList<Track>();
+            update.setAllTracks(allTracks);
+        }
+        List<Track> myTracks = update.getCurrentDeviceTracks();
+        if (null == myTracks) {
+            myTracks = new LinkedList<Track>();
+            update.setCurrentDeviceTracks(myTracks);
+        }
+        Track curTrack = null;
+        String rb_name = pt.name;
+        for (Track t : myTracks) {
+            if (t.name.compareTo(rb_name) == 0) {
+                curTrack = t;
+                break;
+            }
+        }
+        if (null == curTrack) {
+            curTrack = new Track();
+            curTrack.source = "Vicon";
+            curTrack.name = pt.name;
+            curTrack.is_groundtruth = isGroundtruth();
+            HTPM_JFrame.Settings settings = update.getSettings();
+            if (null != settings) {
+                if (isGroundtruth()) {
+                    curTrack.setInterpolatonMethod(settings.gtInterpMethod);
+                } else {
+                    curTrack.setInterpolatonMethod(settings.sutInterpMethod);
+                }
+            }
+            myTracks.add(curTrack);
+
+            if (isGroundtruth()) {
+                List<Track> gtlist = update.getGtlist();
+                if (null == gtlist) {
+                    gtlist = new ArrayList<Track>();
+                    update.setGtlist(gtlist);
+                }
+                gtlist.add(curTrack);
+            } else {
+                List<Track> sutlist = update.getGtlist();
+                if (null == sutlist) {
+                    sutlist = new ArrayList<Track>();
+                    update.setSutlist(sutlist);
+                }
+                sutlist.add(curTrack);
+            }
+            Runnable newTrackRunnable = update.getNewTrackRunnable();
+            if (null != newTrackRunnable) {
+                newTrackRunnable.run();
+            }
+//            //this.drawPanel1.tracks.add(optitrack_track);
+//            EventQueue.invokeLater(new Runnable() {
+//                @Override
+//                public void run() {
+//                    updateEverything();
+//                    //System.out.println("new optitrack track");
+//                }
+//            });
+        }
+//        if (optitrack_track.currentPoint != null
+//                && optitrack_track.currentPoint.distance(pt) < 0.001) {
+//            return false;
+//        }
+        TrackPoint tp = pt;
+//        System.out.println("pre transfrom tp = " + tp);
+        if (isApplyTransform()) {
+            tp.applyTransform(getTransform());
+            curTrack.setTransform(getTransform());
+        }
+//        System.out.println("post transform tp = " + tp);
+        tp.time = System.currentTimeMillis() * 1e-3;
+        tp.confidence = 1.0;
+        curTrack.selected = true;
+
+        curTrack.currentPoint = tp;
+        curTrack.pointColor = Color.RED;
+        curTrack.lineColor = Color.RED;
+        if (null == curTrack.data) {
+            curTrack.data = new ArrayList<>();
+        }
+        curTrack.data.add(tp);
+        if (null != update.getPrintStream()) {
+            update.getCsvLinePrinter()
+                    .printOneLine(tp, curTrack.name, this.frameNumber, this.timeSinceLastRecvTime, 0.0, update.getPrintStream());
+        }
+        if (curTrack.data.size() > 5000) {
+            curTrack.data.remove(0);
+        }
+        curTrack.cur_time_index = curTrack.data.size() - 1;
+        //setCurrentTime(tp.time + 0.00001);
+        return true;
+    }
+    
     @Override
     public void close() {
-        super.close(); 
-        if(null != thread) {
+        super.close();
+        if (null != thread) {
             thread.interrupt();
             try {
                 thread.join(100);
+
             } catch (InterruptedException ex) {
-                Logger.getLogger(ViconDataStream.class.getName()).log(Level.SEVERE, null, ex);
+                Logger.getLogger(ViconDataStream.class
+                        .getName()).log(Level.SEVERE, null, ex);
             }
         }
-        if(null != client) {
-            client.Disconnect();
-            client.delete();
+        if (null != client) {
+            client.close();
             client = null;
         }
     }
 
-    
     @Override
     protected void finalize() throws Throwable {
         close();
-        super.finalize(); 
+        super.finalize();
     }
-    
-    
-
 
 }

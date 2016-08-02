@@ -3380,6 +3380,7 @@ public class HTPM_JFrame extends javax.swing.JFrame {
 
     public MonitoredConnection ods = null;
     private List<Track> optitrack_tracks = null;
+    private List<Track> vicon_tracks = null;
     static final Point2D zero2d = new Point2D.Float(0f, 0f);
 
     /**
@@ -3488,6 +3489,7 @@ public class HTPM_JFrame extends javax.swing.JFrame {
     private double lastLocalRecvTime = 0.0;
 
     private ConnectionUpdate optitrackConnectionUpdate = new ConnectionUpdate();
+    private ConnectionUpdate viconConnectionUpdate = new ConnectionUpdate();
 
     private final Runnable newTrackRunnable = new Runnable() {
 
@@ -3536,6 +3538,151 @@ public class HTPM_JFrame extends javax.swing.JFrame {
             Logger.getLogger(HTPM_JFrame.class.getName()).log(Level.SEVERE, null, ex);
             myShowMessageDialog(this,
                     "Failure encountered updating or recording optitrack data.");
+        }
+//        double time = System.currentTimeMillis() * 1e-3;
+//        ods.last_frame_recieved.timeSinceLastRecvTime = time - lastLocalRecvTime;
+//        ods.last_frame_recieved.localRecvTime = time;
+//        lastLocalRecvTime = time;
+//        if (jCheckBoxMenuItemAddNewFrameLines.isSelected()) {
+//            try {
+//                nanTrackPoint.time = time;
+//                csvLinePrinter.printOneLine(nanTrackPoint, "new_frame", ods.last_frame_recieved.frameNumber, ods.last_frame_recieved.localRecvTime, ods.last_frame_recieved.timestamp, optitrack_print_stream);
+//            } catch (Exception ex) {
+//                Logger.getLogger(HTPM_JFrame.class.getName()).log(Level.SEVERE, null, ex);
+//            }
+//        }
+//        if (this.jCheckBoxMenuItemUnaffiliatedMarkers.isSelected()) {
+//            try {
+//                if (null != ods.last_frame_recieved.other_markers_array
+//                        && ods.last_frame_recieved.other_markers_array.length > 0) {
+//                    if (null == this.optitrack_unaffiliated_track) {
+//                        this.optitrack_unaffiliated_track = new Track();
+//                        this.optitrack_unaffiliated_track.name = "optitrack_unaffiliated_track";
+//                        this.optitrack_unaffiliated_track.source = "optitrack";
+//                        this.optitrack_unaffiliated_track.disconnected = true;
+//                        if (null == optitrack_tracks) {
+//                            optitrack_tracks = new LinkedList<Track>();
+//                        }
+//                        optitrack_tracks.add(optitrack_unaffiliated_track);
+//                        if (this.optitrack_is_ground_truth) {
+//                            if (null == gtlist) {
+//                                gtlist = new LinkedList<Track>();
+//                            }
+//                            gtlist.add(optitrack_unaffiliated_track);
+//                        } else {
+//                            if (null == sutlist) {
+//                                sutlist = new LinkedList<Track>();
+//                            }
+//                            sutlist.add(optitrack_unaffiliated_track);
+//                        }
+//                    }
+//                    for (Point3D p3d : ods.last_frame_recieved.other_markers_array) {
+//                        TrackPoint tp = new TrackPoint(p3d);
+//                        tp.time = time;
+//                        tp.setLatency(ods.last_frame_recieved.latency);
+//                        if (ods.isApplyTransform()) {
+//                            tp.applyTransform(ods.getTransform());
+//                            optitrack_unaffiliated_track.setTransform(ods.getTransform());
+//                        }
+//                        if (null == optitrack_unaffiliated_track.data) {
+//                            optitrack_unaffiliated_track.data = new ArrayList<TrackPoint>();
+//                            optitrack_unaffiliated_track.disconnected = true;
+//                        }
+//                        optitrack_unaffiliated_track.data.add(tp);
+//                        if (null != this.optitrack_print_stream) {
+//                            this.csvLinePrinter.printOneLine(tp,
+//                                    optitrack_unaffiliated_track.name,
+//                                    ods.last_frame_recieved.frameNumber,
+//                                    ods.last_frame_recieved.timeSinceLastRecvTime,
+//                                    ods.last_frame_recieved.timestamp,
+//                                    optitrack_print_stream);
+//                        }
+//                        if (optitrack_unaffiliated_track.data.size() > 5000) {
+//                            optitrack_unaffiliated_track.data.remove(0);
+//                        }
+//                        optitrack_unaffiliated_track.cur_time_index = optitrack_unaffiliated_track.data.size() - 1;
+//                    }
+//                }
+//            } catch (Exception exception) {
+//                exception.printStackTrace();
+//            }
+//        }
+//        if (null == ods
+//                || null == ods.last_frame_recieved
+//                || null == ods.last_frame_recieved.rigid_body_array) {
+//            return;
+//        }
+//        if (updates < 10) {
+//            firstUpdateTime = time;
+//        }
+//        updates++;
+//        boolean point_updated = false;
+//        double timeCollecting = 1e-12 + time - firstUpdateTime;
+//        double fps = (updates - 9) / timeCollecting;
+//        drawPanel1.setLabel(String.format("latency = %.3f ms,\n timeSinceLastRecvTime=%.3f,\n timeCollecting=%.3f,framesPerSecond= %.3f, updates=%d,numRigidBodies=%d,timeStamp=%.3f",
+//                ods.last_frame_recieved.latency,
+//                ods.last_frame_recieved.timeSinceLastRecvTime,
+//                timeCollecting,
+//                fps,
+//                updates,
+//                ods.last_frame_recieved.rigid_body_array.length,
+//                ods.last_frame_recieved.timestamp));
+//        try {
+//            for (OptitrackUDPStream.RigidBody rb : ods.last_frame_recieved.rigid_body_array) {
+//                
+//                boolean new_update
+//                        = this.UpdateOptitrackRigidBody(rb,
+//                                ods.last_frame_recieved,
+//                                this.optitrack_print_stream);
+//                point_updated = point_updated || new_update;
+//                
+//            }
+//        } catch (Exception ex) {
+//            ods.close();
+//            ods = null;
+//            this.jCheckBoxMenuItemOptitrackVicon.setSelected(false);
+//            this.stopRecording();
+//            Logger.getLogger(HTPM_JFrame.class.getName()).log(Level.SEVERE, null, ex);
+//            myShowMessageDialog(this,
+//                    "Failure encountered updating or recording optitrack data.");
+//        }
+
+        drawPanel1.repaint();
+    }
+
+    /**
+     * Update all the tracks and displays using all the latest data from
+     * optitrack.
+     */
+    public void UpdateViconData() {
+        if (null == viconStream) {
+            return;
+        }
+        if (null == viconConnectionUpdate) {
+            viconConnectionUpdate = new ConnectionUpdate();
+        }
+        viconConnectionUpdate.setAddNewFrameLines(jCheckBoxMenuItemAddNewFrameLines.isSelected());
+        viconConnectionUpdate.setAddUnaffiliatedMarkers(jCheckBoxMenuItemUnaffiliatedMarkers.isSelected());
+        viconConnectionUpdate.setSutlist(sutlist);
+        viconConnectionUpdate.setGtlist(gtlist);
+        viconConnectionUpdate.setAllTracks(drawPanel1.tracks);
+        viconConnectionUpdate.setCurrentDeviceTracks(vicon_tracks);
+        viconConnectionUpdate.setNewTrackRunnable(newTrackRunnable);
+        try {
+            viconStream.updateData(viconConnectionUpdate);
+            sutlist = viconConnectionUpdate.getSutlist();
+            gtlist = viconConnectionUpdate.getGtlist();
+            drawPanel1.tracks = viconConnectionUpdate.getAllTracks();
+            vicon_tracks = viconConnectionUpdate.getCurrentDeviceTracks();
+            drawPanel1.setLabel(viconConnectionUpdate.getLabel());
+        } catch (Exception ex) {
+            viconStream.close();
+            viconStream = null;
+            this.jCheckBoxMenuItemOptitrackVicon.setSelected(false);
+            this.stopRecording();
+            Logger.getLogger(HTPM_JFrame.class.getName()).log(Level.SEVERE, null, ex);
+            myShowMessageDialog(this,
+                    "Failure encountered updating or recording vicon data.");
         }
 //        double time = System.currentTimeMillis() * 1e-3;
 //        ods.last_frame_recieved.timeSinceLastRecvTime = time - lastLocalRecvTime;
@@ -3776,9 +3923,9 @@ public class HTPM_JFrame extends javax.swing.JFrame {
         });
         return true;
     }
-    
+
     public MonitoredConnection viconStream = null;
-    
+
     private void jCheckBoxMenuItemOptitrackViconActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jCheckBoxMenuItemOptitrackViconActionPerformed
         if (ods != null) {
             ods.close();
@@ -3832,7 +3979,19 @@ public class HTPM_JFrame extends javax.swing.JFrame {
 
                 case VICON:
                     viconStream = new ViconDataStream(server);
-                    
+                    viconStream.addListener(new Runnable() {
+                        int action_count = 0;
+
+                        @Override
+                        public void run() {
+                            if (action_count < 2) {
+                                s.optitrack_host = server;
+                                s.optitrack_trasform_filename = viconStream.getTransformFilename();
+                            }
+                            action_count++;
+                            UpdateViconData();
+                        }
+                    });
                     break;
             }
             if (null != server) {
@@ -4735,6 +4894,7 @@ public class HTPM_JFrame extends javax.swing.JFrame {
 
     private void ClearData() {
         this.optitrack_tracks = null;
+        this.vicon_tracks = null;
         HTPM_JFrame.gtlist = null;
         HTPM_JFrame.sutlist = null;
         this.drawPanel1.tracks = null;

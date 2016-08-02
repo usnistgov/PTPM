@@ -1,10 +1,7 @@
 package humantrackingperformancemetrics;
 
-
 import humantrackingperformancemetrics.HTPM_JFrame.Settings;
 import java.awt.Color;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.geom.Point2D;
 import java.io.PrintStream;
 import java.net.DatagramPacket;
@@ -89,7 +86,6 @@ public class OptitrackUDPStream extends MonitoredConnection {
     static final short NAT_MESSAGESTRING = 8;
     static final short NAT_UNRECOGNIZED_REQUEST = 100;
     static final String MULTICAST_ADDRESS = "239.255.42.99";
-
 
     /**
      * Write int value to byte array ba at offset using little-endian.
@@ -300,7 +296,6 @@ public class OptitrackUDPStream extends MonitoredConnection {
      * Copy of the last data frame received.
      */
     public DataFrame last_frame_recieved = null;
-
 
     /**
      * Class containing all data obtained in one packet from optitrack.
@@ -837,7 +832,7 @@ public class OptitrackUDPStream extends MonitoredConnection {
         }
         if (null != listeners) {
             for (Runnable r : listeners) {
-               r.run();
+                r.run();
             }
         }
     }
@@ -1058,7 +1053,7 @@ public class OptitrackUDPStream extends MonitoredConnection {
                 }
             }
             myTracks.add(curTrack);
-            
+
             if (isGroundtruth()) {
                 List<Track> gtlist = update.getGtlist();
                 if (null == gtlist) {
@@ -1130,7 +1125,7 @@ public class OptitrackUDPStream extends MonitoredConnection {
     private static final TrackPoint nanTrackPoint = new TrackPoint(Double.NaN, Double.NaN, Double.NaN, Double.NaN, Double.NaN, Double.NaN);
 
     @Override
-    public void updateData(ConnectionUpdate update) throws Exception{
+    public void updateData(ConnectionUpdate update) throws Exception {
         double time = System.currentTimeMillis() * 1e-3;
         last_frame_recieved.timeSinceLastRecvTime = time - lastLocalRecvTime;
         last_frame_recieved.localRecvTime = time;
@@ -1229,15 +1224,15 @@ public class OptitrackUDPStream extends MonitoredConnection {
                 last_frame_recieved.rigid_body_array.length,
                 last_frame_recieved.timestamp));
 //        try {
-            for (OptitrackUDPStream.RigidBody rb : last_frame_recieved.rigid_body_array) {
-                boolean new_update
-                        = UpdateOptitrackRigidBody(rb,
-                                last_frame_recieved,
-                                optitrack_print_stream,
-                                update);
-                point_updated = point_updated || new_update;
+        for (OptitrackUDPStream.RigidBody rb : last_frame_recieved.rigid_body_array) {
+            boolean new_update
+                    = UpdateOptitrackRigidBody(rb,
+                            last_frame_recieved,
+                            optitrack_print_stream,
+                            update);
+            point_updated = point_updated || new_update;
 
-            }
+        }
 //        } catch (Exception ex) {
 //            close();
 //            ods = null;

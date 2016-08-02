@@ -1,12 +1,20 @@
 package humantrackingperformancemetrics;
 
+
+import humantrackingperformancemetrics.HTPM_JFrame.Settings;
+import java.awt.Color;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.geom.Point2D;
+import java.io.PrintStream;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.MulticastSocket;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -82,7 +90,6 @@ public class OptitrackUDPStream extends MonitoredConnection {
     static final short NAT_UNRECOGNIZED_REQUEST = 100;
     static final String MULTICAST_ADDRESS = "239.255.42.99";
 
-    public LinkedList<ActionListener> listeners = null;
 
     /**
      * Write int value to byte array ba at offset using little-endian.
@@ -210,7 +217,7 @@ public class OptitrackUDPStream extends MonitoredConnection {
     private void readPacketFromDataSocket() {
         try {
             DatagramPacket dataPacket = new DatagramPacket(data_ba, data_ba.length,
-                    this.svrAddess, 1511);
+                    svrAddess, 1511);
             dataSocket.receive(dataPacket);
             if (debug) {
                 System.out.println("dataPacket = " + dataPacket);
@@ -233,32 +240,32 @@ public class OptitrackUDPStream extends MonitoredConnection {
      * @param _hostname Hostname or IP address of server running TrackingTools.
      */
     public OptitrackUDPStream(String _hostname, boolean _multicast, final int netNatMajor, final int netNatMinor) {
-        this.multicast = _multicast;
-        this.major = netNatMajor;
-        this.minor = netNatMinor;
+        multicast = _multicast;
+        major = netNatMajor;
+        minor = netNatMinor;
         try {
-            this.source = "optitack";
-            this.hostname = _hostname;
-            this.svrAddess = InetAddress.getByName(hostname);
+            source = "optitack";
+            hostname = _hostname;
+            svrAddess = InetAddress.getByName(hostname);
             cmdSocket = new DatagramSocket();
             cmdOutPacket = new DatagramPacket(cmd_out_ba, cmd_out_ba.length,
-                    this.svrAddess, 1510);
+                    svrAddess, 1510);
             cmdResponsePacket = new DatagramPacket(cmd_in_ba, cmd_in_ba.length,
-                    this.svrAddess, 1510);
+                    svrAddess, 1510);
             if (!multicast) {
                 dataSocket = cmdSocket;// new DatagramSocket();
-                this.dataPacketAddress = this.svrAddess;
+                dataPacketAddress = svrAddess;
             } else {
                 dataSocket = new MulticastSocket(1511);
-                this.groupAddess = InetAddress.getByName(MULTICAST_ADDRESS);
+                groupAddess = InetAddress.getByName(MULTICAST_ADDRESS);
 //            NetworkInterface networkInterface = NetworkInterface.getByName("eth0");
-//            ((MulticastSocket)dataSocket).joinGroup(new InetSocketAddress(this.groupAddess,1511), networkInterface);
-                ((MulticastSocket) dataSocket).joinGroup(this.groupAddess);
+//            ((MulticastSocket)dataSocket).joinGroup(new InetSocketAddress(groupAddess,1511), networkInterface);
+                ((MulticastSocket) dataSocket).joinGroup(groupAddess);
 ////            dataSocket = new DatagramSocket();
 //            dataPacket = new DatagramPacket(data_ba, data_ba.length,
-//                    this.groupAddess, 1511);
+//                    groupAddess, 1511);
 
-                this.dataPacketAddress = this.groupAddess;
+                dataPacketAddress = groupAddess;
             }
             cmdSocketReaderThread = new Thread(new Runnable() {
                 @Override
@@ -294,29 +301,6 @@ public class OptitrackUDPStream extends MonitoredConnection {
      */
     public DataFrame last_frame_recieved = null;
 
-    /**
-     * Add a listener that will be called whenever a data frame is received.
-     *
-     * @param al listener to add
-     */
-    public void addListener(ActionListener al) {
-        if (null == this.listeners) {
-            this.listeners = new LinkedList<ActionListener>();
-        }
-        this.listeners.add(al);
-    }
-
-    /**
-     * Remove a previously added listener.
-     *
-     * @param al listener to remove
-     */
-    public void removeListener(ActionListener al) {
-        if (null == this.listeners) {
-            this.listeners = new LinkedList<ActionListener>();
-        }
-        this.listeners.remove(al);
-    }
 
     /**
      * Class containing all data obtained in one packet from optitrack.
@@ -325,7 +309,7 @@ public class OptitrackUDPStream extends MonitoredConnection {
 
         public double localRecvTime;
         public double timeSinceLastRecvTime;
-        
+
         /**
          * frame number, seems to not to be implemented properly
          */
@@ -371,12 +355,11 @@ public class OptitrackUDPStream extends MonitoredConnection {
 
         /**
          * From NatNet User's Guide
-         * 
-         * Latency is the capture computer's hardware timestamp for the given frame, 
-         * which is also displayed in Motive in the Camera Preview 
-         * viewport
-         * when camera info is enabled.  
-         * This is the same whether live or playback from file.
+         *
+         * Latency is the capture computer's hardware timestamp for the given
+         * frame, which is also displayed in Motive in the Camera Preview
+         * viewport when camera info is enabled. This is the same whether live
+         * or playback from file.
          */
         public float latency;
 
@@ -688,8 +671,8 @@ public class OptitrackUDPStream extends MonitoredConnection {
             if (debug) {
                 System.out.println("Number of Labeled Markers:" + df.nLabeledMarkers);
             }
-            if (df.nLabeledMarkers > 0 
-                    && (df.labeled_marker_array == null || df.labeled_marker_array.length != df.nLabeledMarkers) ) {
+            if (df.nLabeledMarkers > 0
+                    && (df.labeled_marker_array == null || df.labeled_marker_array.length != df.nLabeledMarkers)) {
                 df.labeled_marker_array = new LabeledMarker[df.nLabeledMarkers];
             }
             for (int j = 0; j < df.nLabeledMarkers; j++) {
@@ -799,7 +782,7 @@ public class OptitrackUDPStream extends MonitoredConnection {
         }
         offset += 4;
         if (true) {
-            System.out.println("offset at end of data unpackFrameData = " + offset+", nDataBytes="+nDataBytes+",data.length="+data.length);
+            System.out.println("offset at end of data unpackFrameData = " + offset + ", nDataBytes=" + nDataBytes + ",data.length=" + data.length);
             System.out.println("");
             System.out.println("");
             System.out.flush();
@@ -847,15 +830,14 @@ public class OptitrackUDPStream extends MonitoredConnection {
                 break;
 
             case NAT_FRAMEOFDATA:
-                this.incUpdates();
-                this.last_frame_recieved
+                incUpdates();
+                last_frame_recieved
                         = unpackFrameData(data, iMessage, nDataBytes);
                 break;
         }
         if (null != listeners) {
-            ActionEvent ae = new ActionEvent(this, ActionEvent.ACTION_PERFORMED, "New data");
-            for (ActionListener al : this.listeners) {
-                al.actionPerformed(ae);
+            for (Runnable r : listeners) {
+               r.run();
             }
         }
     }
@@ -889,7 +871,7 @@ public class OptitrackUDPStream extends MonitoredConnection {
     public void ping() {
         try {
             final int old_ping_count = ping_count;
-            this.sendPingRequest();
+            sendPingRequest();
             while (old_ping_count == ping_count) {
                 if (debug) {
                     System.out.println("ping_count = " + ping_count);
@@ -898,7 +880,7 @@ public class OptitrackUDPStream extends MonitoredConnection {
                     System.out.println("old_ping_count = " + old_ping_count);
                 }
                 Thread.sleep(1000);
-                this.sendPingRequest();
+                sendPingRequest();
             }
             if (debug) {
                 System.out.println("ping_count = " + ping_count);
@@ -914,7 +896,7 @@ public class OptitrackUDPStream extends MonitoredConnection {
     public boolean try_ping(int max_tries, long sleep_millis) {
         try {
             final int old_ping_count = ping_count;
-            this.sendPingRequest();
+            sendPingRequest();
             int tries = 0;
             while (old_ping_count == ping_count) {
                 if (tries > max_tries) {
@@ -928,7 +910,7 @@ public class OptitrackUDPStream extends MonitoredConnection {
                     System.out.println("old_ping_count = " + old_ping_count);
                 }
                 Thread.sleep(sleep_millis);
-                this.sendPingRequest();
+                sendPingRequest();
             }
             if (debug) {
                 System.out.println("ping_count = " + ping_count);
@@ -944,20 +926,20 @@ public class OptitrackUDPStream extends MonitoredConnection {
 
     public void getFrame() {
         try {
-            final long old_updates = updates;
-            this.sendFrameRequest();
-            while (old_updates == updates) {
+            final long old_updates = getUpdates();
+            sendFrameRequest();
+            while (old_updates == getUpdates()) {
                 if (debug) {
-                    System.out.println("updates = " + updates);
+                    System.out.println("updates = " + getUpdates());
                 }
                 if (debug) {
                     System.out.println("old_updates = " + old_updates);
                 }
                 Thread.sleep(1000);
-                this.sendFrameRequest();
+                sendFrameRequest();
             }
             if (debug) {
-                System.out.println("updates = " + updates);
+                System.out.println("updates = " + getUpdates());
             }
             if (debug) {
                 System.out.println("old_updates = " + old_updates);
@@ -968,7 +950,7 @@ public class OptitrackUDPStream extends MonitoredConnection {
     }
 
     public void close() {
-        this.ignore_errors = true;
+        ignore_errors = true;
         if (null != dataSocket) {
             dataSocket.close();
             dataSocket = null;
@@ -978,19 +960,19 @@ public class OptitrackUDPStream extends MonitoredConnection {
             cmdSocket = null;
         }
         try {
-            if (null != this.cmdSocketReaderThread) {
-                this.cmdSocketReaderThread.interrupt();
-                this.cmdSocketReaderThread.join();
-                this.cmdSocketReaderThread = null;
+            if (null != cmdSocketReaderThread) {
+                cmdSocketReaderThread.interrupt();
+                cmdSocketReaderThread.join();
+                cmdSocketReaderThread = null;
             }
         } catch (Exception exception) {
             exception.printStackTrace();
         }
         try {
-            if (null != this.dataSocketReaderThread) {
-                this.dataSocketReaderThread.interrupt();
-                this.dataSocketReaderThread.join();
-                this.dataSocketReaderThread = null;
+            if (null != dataSocketReaderThread) {
+                dataSocketReaderThread.interrupt();
+                dataSocketReaderThread.join();
+                dataSocketReaderThread = null;
             }
         } catch (Exception exception) {
             exception.printStackTrace();
@@ -1009,9 +991,9 @@ public class OptitrackUDPStream extends MonitoredConnection {
         debug = true;
         OptitrackUDPStream ots = new OptitrackUDPStream("129.6.39.54", true, 2, 6);
         ots.ping();
-        while (ots.updates < 3) {
+        while (ots.getUpdates() < 3) {
             if (debug) {
-                System.out.println("ots.updates = " + ots.updates);
+                System.out.println("ots.updates = " + ots.getUpdates());
             }
             try {
                 Thread.sleep(1000);
@@ -1020,5 +1002,250 @@ public class OptitrackUDPStream extends MonitoredConnection {
             }
         }
         ots.close();
+    }
+
+    private int updates = 0;
+    private double firstUpdateTime = 0.0;
+    private double lastLocalRecvTime = 0.0;
+    private static final Point2D zero2d = new Point2D.Float(0f, 0f);
+
+    /**
+     * Update tracks and displays using the current position of one rigid body
+     * as reported by the optitrack.
+     *
+     * @param rb Optitrack rigid body data
+     * @return whether displays and/or logs need to be updated.
+     */
+    public boolean UpdateOptitrackRigidBody(OptitrackUDPStream.RigidBody rb,
+            DataFrame df,
+            PrintStream ps,
+            ConnectionUpdate update) throws Exception {
+        boolean point_updated = false;
+        Point3D pt = rb.pos;
+
+        if (zero2d.distance(pt) < 0.001) {
+            return false;
+        }
+        List<Track> allTracks = update.getAllTracks();
+        if (null == allTracks) {
+            allTracks = new ArrayList<Track>();
+            update.setAllTracks(allTracks);
+        }
+        List<Track> myTracks = update.getCurrentDeviceTracks();
+        if (null == myTracks) {
+            myTracks = new LinkedList<Track>();
+            update.setCurrentDeviceTracks(myTracks);
+        }
+        Track curTrack = null;
+        String rb_name = Integer.toString(rb.ID);
+        for (Track t : myTracks) {
+            if (t.name.compareTo(rb_name) == 0) {
+                curTrack = t;
+                break;
+            }
+        }
+        if (null == curTrack) {
+            curTrack = new Track();
+            curTrack.source = "optitrack";
+            curTrack.name = Integer.toString(rb.ID);
+            curTrack.is_groundtruth = isGroundtruth();
+            Settings settings = update.getSettings();
+            if (null != settings) {
+                if (isGroundtruth()) {
+                    curTrack.setInterpolatonMethod(settings.gtInterpMethod);
+                } else {
+                    curTrack.setInterpolatonMethod(settings.sutInterpMethod);
+                }
+            }
+            myTracks.add(curTrack);
+            
+            if (isGroundtruth()) {
+                List<Track> gtlist = update.getGtlist();
+                if (null == gtlist) {
+                    gtlist = new ArrayList<Track>();
+                    update.setGtlist(gtlist);
+                }
+                gtlist.add(curTrack);
+            } else {
+                List<Track> sutlist = update.getGtlist();
+                if (null == sutlist) {
+                    sutlist = new ArrayList<Track>();
+                    update.setSutlist(sutlist);
+                }
+                sutlist.add(curTrack);
+            }
+            Runnable newTrackRunnable = update.getNewTrackRunnable();
+            if (null != newTrackRunnable) {
+                newTrackRunnable.run();
+            }
+//            //this.drawPanel1.tracks.add(optitrack_track);
+//            EventQueue.invokeLater(new Runnable() {
+//                @Override
+//                public void run() {
+//                    updateEverything();
+//                    //System.out.println("new optitrack track");
+//                }
+//            });
+        }
+//        if (optitrack_track.currentPoint != null
+//                && optitrack_track.currentPoint.distance(pt) < 0.001) {
+//            return false;
+//        }
+        TrackPoint tp = new TrackPoint(pt);
+        if (null != rb.ori && rb.ori.length == 4) {
+            tp.orientation = Arrays.copyOf(rb.ori, 4);
+        }
+        if (null != df) {
+            tp.setLatency(df.latency);
+        }
+//        System.out.println("pre transfrom tp = " + tp);
+        if (isApplyTransform()) {
+            tp.applyTransform(getTransform());
+            curTrack.setTransform(getTransform());
+        }
+//        System.out.println("post transform tp = " + tp);
+        tp.time = System.currentTimeMillis() * 1e-3;
+        tp.confidence = 1.0;
+        curTrack.selected = true;
+
+        curTrack.currentPoint = tp;
+        curTrack.pointColor = Color.RED;
+        curTrack.lineColor = Color.RED;
+        if (null == curTrack.data) {
+            curTrack.data = new ArrayList<TrackPoint>();
+        }
+        curTrack.data.add(tp);
+        if (null != ps) {
+            update.getCsvLinePrinter()
+                    .printOneLine(tp, curTrack.name, df.frameNumber, df.timeSinceLastRecvTime, df.timestamp, ps);
+        }
+        if (curTrack.data.size() > 5000) {
+            curTrack.data.remove(0);
+        }
+        curTrack.cur_time_index = curTrack.data.size() - 1;
+        //setCurrentTime(tp.time + 0.00001);
+        return true;
+    }
+
+    private static final TrackPoint nanTrackPoint = new TrackPoint(Double.NaN, Double.NaN, Double.NaN, Double.NaN, Double.NaN, Double.NaN);
+
+    @Override
+    public void updateData(ConnectionUpdate update) throws Exception{
+        double time = System.currentTimeMillis() * 1e-3;
+        last_frame_recieved.timeSinceLastRecvTime = time - lastLocalRecvTime;
+        last_frame_recieved.localRecvTime = time;
+        lastLocalRecvTime = time;
+        PrintStream optitrack_print_stream = update.getPrintStream();
+
+        if (update.isAddNewFrameLines()) {
+            try {
+                nanTrackPoint.time = time;
+                update.getCsvLinePrinter().printOneLine(nanTrackPoint, "new_frame", last_frame_recieved.frameNumber, last_frame_recieved.localRecvTime, last_frame_recieved.timestamp, optitrack_print_stream);
+            } catch (Exception ex) {
+                Logger.getLogger(HTPM_JFrame.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+        if (update.isAddUnaffiliatedMarkers()) {
+            try {
+                if (null != last_frame_recieved.other_markers_array
+                        && last_frame_recieved.other_markers_array.length > 0) {
+                    Track optitrack_unaffiliated_track = update.getUnaffiliatedTrack();
+                    if (null == optitrack_unaffiliated_track) {
+                        optitrack_unaffiliated_track = new Track();
+                        optitrack_unaffiliated_track.name = "optitrack_unaffiliated_track";
+                        optitrack_unaffiliated_track.source = "optitrack";
+                        optitrack_unaffiliated_track.disconnected = true;
+                        List<Track> optitrack_tracks = update.getCurrentDeviceTracks();
+                        if (null == optitrack_tracks) {
+                            optitrack_tracks = new LinkedList<Track>();
+                        }
+                        optitrack_tracks.add(optitrack_unaffiliated_track);
+                        if (isGroundtruth()) {
+                            List<Track> gtlist = update.getGtlist();
+                            if (null == gtlist) {
+                                gtlist = new LinkedList<Track>();
+                                update.setGtlist(gtlist);
+                            }
+                            gtlist.add(optitrack_unaffiliated_track);
+                        } else {
+                            List<Track> sutlist = update.getGtlist();
+                            if (null == sutlist) {
+                                sutlist = new LinkedList<Track>();
+                                update.setSutlist(sutlist);
+                            }
+                            sutlist.add(optitrack_unaffiliated_track);
+                        }
+                        update.setCurrentDeviceTracks(optitrack_tracks);
+                    }
+                    for (Point3D p3d : last_frame_recieved.other_markers_array) {
+                        TrackPoint tp = new TrackPoint(p3d);
+                        tp.time = time;
+                        tp.setLatency(last_frame_recieved.latency);
+                        if (isApplyTransform()) {
+                            tp.applyTransform(getTransform());
+                            optitrack_unaffiliated_track.setTransform(getTransform());
+                        }
+                        if (null == optitrack_unaffiliated_track.data) {
+                            optitrack_unaffiliated_track.data = new ArrayList<TrackPoint>();
+                            optitrack_unaffiliated_track.disconnected = true;
+                        }
+                        optitrack_unaffiliated_track.data.add(tp);
+                        if (null != optitrack_print_stream) {
+                            update.getCsvLinePrinter()
+                                    .printOneLine(tp,
+                                            optitrack_unaffiliated_track.name,
+                                            last_frame_recieved.frameNumber,
+                                            last_frame_recieved.timeSinceLastRecvTime,
+                                            last_frame_recieved.timestamp,
+                                            optitrack_print_stream);
+                        }
+                        if (optitrack_unaffiliated_track.data.size() > 5000) {
+                            optitrack_unaffiliated_track.data.remove(0);
+                        }
+                        optitrack_unaffiliated_track.cur_time_index = optitrack_unaffiliated_track.data.size() - 1;
+                    }
+                }
+            } catch (Exception exception) {
+                exception.printStackTrace();
+            }
+        }
+        if (null == last_frame_recieved
+                || null == last_frame_recieved.rigid_body_array) {
+            return;
+        }
+        if (updates < 10) {
+            firstUpdateTime = time;
+        }
+        updates++;
+        boolean point_updated = false;
+        double timeCollecting = 1e-12 + time - firstUpdateTime;
+        double fps = (updates - 9) / timeCollecting;
+        update.setLabel(String.format("latency = %.3f ms,\n timeSinceLastRecvTime=%.3f,\n timeCollecting=%.3f,framesPerSecond= %.3f, updates=%d,numRigidBodies=%d,timeStamp=%.3f",
+                last_frame_recieved.latency,
+                last_frame_recieved.timeSinceLastRecvTime,
+                timeCollecting,
+                fps,
+                updates,
+                last_frame_recieved.rigid_body_array.length,
+                last_frame_recieved.timestamp));
+//        try {
+            for (OptitrackUDPStream.RigidBody rb : last_frame_recieved.rigid_body_array) {
+                boolean new_update
+                        = UpdateOptitrackRigidBody(rb,
+                                last_frame_recieved,
+                                optitrack_print_stream,
+                                update);
+                point_updated = point_updated || new_update;
+
+            }
+//        } catch (Exception ex) {
+//            close();
+//            ods = null;
+//            jCheckBoxMenuItemOptitrackVicon.setSelected(false);
+//            stopRecording();
+//            Logger.getLogger(HTPM_JFrame.class.getName()).log(Level.SEVERE, null, ex);
+//            myShowMessageDialog(this,
+//                    "Failure encountered updating or recording optitrack data.");
+//        }
     }
 }

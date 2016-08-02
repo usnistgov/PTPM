@@ -275,12 +275,12 @@
             <Property name="text" type="java.lang.String" value="Connections"/>
           </Properties>
           <SubComponents>
-            <MenuItem class="javax.swing.JCheckBoxMenuItem" name="jCheckBoxMenuItemOptitrack">
+            <MenuItem class="javax.swing.JCheckBoxMenuItem" name="jCheckBoxMenuItemOptitrackVicon">
               <Properties>
-                <Property name="text" type="java.lang.String" value="Connect/Show Live Optitrack Data"/>
+                <Property name="text" type="java.lang.String" value="Connect/Show Live Optitrack/Vicon Data"/>
               </Properties>
               <Events>
-                <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="jCheckBoxMenuItemOptitrackActionPerformed"/>
+                <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="jCheckBoxMenuItemOptitrackViconActionPerformed"/>
               </Events>
             </MenuItem>
             <MenuItem class="javax.swing.JCheckBoxMenuItem" name="jCheckBoxMenuItemAcceptGT">

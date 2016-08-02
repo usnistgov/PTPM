@@ -28,7 +28,7 @@ public class ConnectionsJFrame extends javax.swing.JFrame {
     private void initComponents() {
 
         jScrollPane1 = new javax.swing.JScrollPane();
-        jList1 = new javax.swing.JList<MonitoredConnection>();
+        jList1 = new javax.swing.JList<>();
         jCheckBoxUseTimeRecvd = new javax.swing.JCheckBox();
         jButtonConnectionDisconnect = new javax.swing.JButton();
         jLabel1 = new javax.swing.JLabel();
@@ -40,15 +40,12 @@ public class ConnectionsJFrame extends javax.swing.JFrame {
         jCheckBoxMonitorConnection = new javax.swing.JCheckBox();
         jCheckBoxApplyTransform = new javax.swing.JCheckBox();
         jButtonEditTransform = new javax.swing.JButton();
+        jLabel4 = new javax.swing.JLabel();
+        jTextFieldMissedFrames = new javax.swing.JTextField();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setTitle("Connections ...");
 
-        jList1.setModel(new javax.swing.AbstractListModel() {
-            String[] strings = { "Item 1", "Item 2", "Item 3", "Item 4", "Item 5" };
-            public int getSize() { return strings.length; }
-            public Object getElementAt(int i) { return strings[i]; }
-        });
         jList1.addListSelectionListener(new javax.swing.event.ListSelectionListener() {
             public void valueChanged(javax.swing.event.ListSelectionEvent evt) {
                 jList1ValueChanged(evt);
@@ -114,6 +111,10 @@ public class ConnectionsJFrame extends javax.swing.JFrame {
             }
         });
 
+        jLabel4.setText("Missed Frames: ");
+
+        jTextFieldMissedFrames.setText("0");
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
@@ -121,42 +122,43 @@ public class ConnectionsJFrame extends javax.swing.JFrame {
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
                 .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 299, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(layout.createSequentialGroup()
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(jLabel1)
+                            .addComponent(jLabel2)
+                            .addComponent(jCheckBoxUseTimeRecvd))
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addGroup(layout.createSequentialGroup()
-                                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addComponent(jLabel1)
-                                    .addComponent(jLabel2)
-                                    .addComponent(jCheckBoxUseTimeRecvd))
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addComponent(jTextFieldMonitorPeriod, javax.swing.GroupLayout.DEFAULT_SIZE, 27, Short.MAX_VALUE)
-                                    .addComponent(jTextFieldRequiredUpdates)))
-                            .addGroup(layout.createSequentialGroup()
-                                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addComponent(jButtonConnectionDisconnect, javax.swing.GroupLayout.PREFERRED_SIZE, 181, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                    .addComponent(jCheckBoxMonitorConnection))
-                                .addGap(0, 0, Short.MAX_VALUE))
-                            .addGroup(layout.createSequentialGroup()
-                                .addComponent(jLabel3)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(jTextFieldUpdates)))
-                        .addContainerGap())
+                            .addComponent(jTextFieldMonitorPeriod)
+                            .addComponent(jTextFieldRequiredUpdates)))
                     .addGroup(layout.createSequentialGroup()
-                        .addGap(20, 20, 20)
-                        .addComponent(jCheckBoxApplyTransform)
+                        .addComponent(jLabel3)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(jButtonEditTransform)
-                        .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))))
+                        .addComponent(jTextFieldUpdates))
+                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                        .addGroup(layout.createSequentialGroup()
+                            .addComponent(jLabel4)
+                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                            .addComponent(jTextFieldMissedFrames))
+                        .addGroup(layout.createSequentialGroup()
+                            .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                .addComponent(jButtonConnectionDisconnect, javax.swing.GroupLayout.PREFERRED_SIZE, 181, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(jCheckBoxMonitorConnection)
+                                .addGroup(layout.createSequentialGroup()
+                                    .addComponent(jCheckBoxApplyTransform)
+                                    .addGap(69, 69, 69)
+                                    .addComponent(jButtonEditTransform)))
+                            .addGap(0, 0, Short.MAX_VALUE))))
+                .addContainerGap())
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 275, Short.MAX_VALUE)
+                    .addComponent(jScrollPane1)
                     .addGroup(layout.createSequentialGroup()
                         .addComponent(jButtonConnectionDisconnect)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
@@ -175,7 +177,11 @@ public class ConnectionsJFrame extends javax.swing.JFrame {
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addComponent(jLabel3)
                             .addComponent(jTextFieldUpdates, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addGap(18, 18, 18)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                            .addComponent(jLabel4)
+                            .addComponent(jTextFieldMissedFrames, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                             .addComponent(jCheckBoxApplyTransform)
                             .addComponent(jButtonEditTransform))
@@ -220,8 +226,7 @@ public class ConnectionsJFrame extends javax.swing.JFrame {
             return;
         }
         String reqiredUpdatesS = this.jTextFieldRequiredUpdates.getText();
-        selected_client.required_updates_per_period = 
-                Long.valueOf(reqiredUpdatesS);
+        selected_client.setRequiredUpdatesPerPeriod((long) Long.valueOf(reqiredUpdatesS));
     }//GEN-LAST:event_jTextFieldRequiredUpdatesActionPerformed
 
     private void jList1ValueChanged(javax.swing.event.ListSelectionEvent evt) {//GEN-FIRST:event_jList1ValueChanged
@@ -230,11 +235,12 @@ public class ConnectionsJFrame extends javax.swing.JFrame {
             return;
         }
         this.jTextFieldMonitorPeriod.setText(Integer.toString(selected_client.get_monitor_period()/1000));
-        this.jTextFieldRequiredUpdates.setText(Long.toString(selected_client.required_updates_per_period));
-        this.jTextFieldUpdates.setText(Long.toString(selected_client.updates));
-        this.jCheckBoxUseTimeRecvd.setSelected(selected_client.use_time_recieved);
-        this.jCheckBoxApplyTransform.setSelected(selected_client.apply_transform);
-        selected_client.monitor_connection = this.jCheckBoxMonitorConnection.isSelected();
+        this.jTextFieldRequiredUpdates.setText(Long.toString(selected_client.getRequiredUpdatesPerPeriod()));
+        this.jTextFieldUpdates.setText(Long.toString(selected_client.getUpdates()));
+        this.jTextFieldMissedFrames.setText(Long.toString(selected_client.getMissedFrames()));
+        this.jCheckBoxUseTimeRecvd.setSelected(selected_client.isUseTimeRecieved());
+        this.jCheckBoxApplyTransform.setSelected(selected_client.isApplyTransform());
+        selected_client.setMonitorConnection(this.jCheckBoxMonitorConnection.isSelected());
     }//GEN-LAST:event_jList1ValueChanged
 
     private void jCheckBoxUseTimeRecvdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jCheckBoxUseTimeRecvdActionPerformed
@@ -242,7 +248,7 @@ public class ConnectionsJFrame extends javax.swing.JFrame {
         if(null == selected_client) {
             return;
         }
-        selected_client.use_time_recieved = this.jCheckBoxUseTimeRecvd.isSelected();
+        selected_client.setUseTimeRecieved(this.jCheckBoxUseTimeRecvd.isSelected());
     }//GEN-LAST:event_jCheckBoxUseTimeRecvdActionPerformed
 
     private void jCheckBoxMonitorConnectionActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jCheckBoxMonitorConnectionActionPerformed
@@ -250,10 +256,9 @@ public class ConnectionsJFrame extends javax.swing.JFrame {
         if(null == selected_client) {
             return;
         }
-        selected_client.monitor_connection = this.jCheckBoxMonitorConnection.isSelected();
+        selected_client.setMonitorConnection(this.jCheckBoxMonitorConnection.isSelected());
         String reqiredUpdatesS = this.jTextFieldRequiredUpdates.getText();
-        selected_client.required_updates_per_period = 
-                Long.valueOf(reqiredUpdatesS);
+        selected_client.setRequiredUpdatesPerPeriod((long) Long.valueOf(reqiredUpdatesS));
         String periodS = this.jTextFieldMonitorPeriod.getText();
         int period = Integer.valueOf(periodS);
         selected_client.set_monitor_period(period*1000);
@@ -265,8 +270,7 @@ public class ConnectionsJFrame extends javax.swing.JFrame {
         if(null == selected_client) {
             return;
         }
-        selected_client.apply_transform 
-                = this.jCheckBoxApplyTransform.isSelected();
+        selected_client.setApplyTransform(this.jCheckBoxApplyTransform.isSelected());
     }//GEN-LAST:event_jCheckBoxApplyTransformActionPerformed
 
     private void jButtonEditTransformActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonEditTransformActionPerformed
@@ -275,7 +279,7 @@ public class ConnectionsJFrame extends javax.swing.JFrame {
             return;
         }
         TransformMatrixJPanel.showDialog(this, selected_client);
-        this.jCheckBoxApplyTransform.setSelected(selected_client.apply_transform);
+        this.jCheckBoxApplyTransform.setSelected(selected_client.isApplyTransform());
     }//GEN-LAST:event_jButtonEditTransformActionPerformed
     public HTPM_JFrame main_frame = null;
     
@@ -288,7 +292,8 @@ public class ConnectionsJFrame extends javax.swing.JFrame {
         if(null == selected_client || selected_client != client) {
             return;
         }
-        this.jTextFieldUpdates.setText(Long.toString(client.updates));
+        this.jTextFieldUpdates.setText(Long.toString(client.getUpdates()));
+        this.jTextFieldMissedFrames.setText(Long.toString(selected_client.getMissedFrames()));
     }
     
     public void UpdateList() {
@@ -307,6 +312,9 @@ public class ConnectionsJFrame extends javax.swing.JFrame {
             }
             if(null != main_frame.ods) {
                 lm.addElement(main_frame.ods);
+            }
+            if(null != main_frame.viconStream) {
+                lm.addElement(main_frame.viconStream);
             }
             if(null != main_frame.default_client) {
                 lm.addElement(main_frame.default_client);
@@ -359,8 +367,10 @@ public class ConnectionsJFrame extends javax.swing.JFrame {
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel3;
+    private javax.swing.JLabel jLabel4;
     private javax.swing.JList<MonitoredConnection> jList1;
     private javax.swing.JScrollPane jScrollPane1;
+    private javax.swing.JTextField jTextFieldMissedFrames;
     private javax.swing.JTextField jTextFieldMonitorPeriod;
     private javax.swing.JTextField jTextFieldRequiredUpdates;
     private javax.swing.JTextField jTextFieldUpdates;

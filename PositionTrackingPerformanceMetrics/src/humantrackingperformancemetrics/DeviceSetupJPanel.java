@@ -28,19 +28,19 @@ import javax.swing.JDialog;
  *
  * @author Will Shackleford {@literal <william.shackleford@nist.gov>}
  */
-public class OptitrackSetupJPanel extends javax.swing.JPanel {
+public class DeviceSetupJPanel extends javax.swing.JPanel {
 
     /**
      * Creates new form OptitrackSetupJPanel
      */
-    public OptitrackSetupJPanel() {
+    public DeviceSetupJPanel() {
         initComponents();
     }
 
     private JDialog dialog=null;
-    private OptitrackSetupOptions options;
+    private DeviceSetupOptions options;
 
-    public OptitrackSetupOptions getOptions() {
+    public DeviceSetupOptions getOptions() {
         return options;
     }
 
@@ -50,8 +50,8 @@ public class OptitrackSetupJPanel extends javax.swing.JPanel {
         return cancelled;
     }
     
-    static public OptitrackSetupJPanel showDialog(Frame parent) {
-        OptitrackSetupJPanel opanel = new OptitrackSetupJPanel();
+    static public DeviceSetupJPanel showDialog(Frame parent) {
+        DeviceSetupJPanel opanel = new DeviceSetupJPanel();
         JDialog dialog = new JDialog(parent, Dialog.ModalityType.APPLICATION_MODAL);
         opanel.setVisible(true);
         opanel.dialog = dialog;
@@ -67,11 +67,16 @@ public class OptitrackSetupJPanel extends javax.swing.JPanel {
         if(opanel.cancelled) {
             opanel.options = null;
         } else {
-            opanel.options = new OptitrackSetupOptions(opanel.jTextFieldHost.getText(), 
+            DeviceTypeEnum devType = DeviceTypeEnum.OPTITRACK;
+            if(opanel.jRadioButtonVicon.isSelected()) {
+                devType = DeviceTypeEnum.VICON;
+            }
+            opanel.options = new DeviceSetupOptions(opanel.jTextFieldHost.getText(), 
                         opanel.jTextFieldVersion.getText(), 
                         opanel.jCheckBoxMulticast.isSelected(), 
                         opanel.jCheckBoxGroundTruth.isSelected(), 
-                        opanel.jCheckBoxStartRecording.isSelected());
+                        opanel.jCheckBoxStartRecording.isSelected(),
+                        devType);
         }
         return opanel;
     }
@@ -85,6 +90,7 @@ public class OptitrackSetupJPanel extends javax.swing.JPanel {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
+        buttonGroup1 = new javax.swing.ButtonGroup();
         jLabel1 = new javax.swing.JLabel();
         jTextFieldHost = new javax.swing.JTextField();
         jCheckBoxGroundTruth = new javax.swing.JCheckBox();
@@ -94,6 +100,9 @@ public class OptitrackSetupJPanel extends javax.swing.JPanel {
         jButtonOk = new javax.swing.JButton();
         jLabel2 = new javax.swing.JLabel();
         jTextFieldVersion = new javax.swing.JTextField();
+        jPanel1 = new javax.swing.JPanel();
+        jRadioButtonVicon = new javax.swing.JRadioButton();
+        jRadioButtonOptitrack = new javax.swing.JRadioButton();
 
         jLabel1.setText("Host:");
 
@@ -124,29 +133,59 @@ public class OptitrackSetupJPanel extends javax.swing.JPanel {
 
         jTextFieldVersion.setText("2.10");
 
+        jPanel1.setBorder(javax.swing.BorderFactory.createTitledBorder("Device Type"));
+
+        buttonGroup1.add(jRadioButtonVicon);
+        jRadioButtonVicon.setText("Vicon");
+
+        buttonGroup1.add(jRadioButtonOptitrack);
+        jRadioButtonOptitrack.setText("Optitrack");
+
+        javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
+        jPanel1.setLayout(jPanel1Layout);
+        jPanel1Layout.setHorizontalGroup(
+            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel1Layout.createSequentialGroup()
+                .addContainerGap()
+                .addComponent(jRadioButtonVicon)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jRadioButtonOptitrack)
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+        );
+        jPanel1Layout.setVerticalGroup(
+            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel1Layout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jRadioButtonVicon)
+                    .addComponent(jRadioButtonOptitrack))
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+        );
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(this);
         this.setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(layout.createSequentialGroup()
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
                 .addContainerGap()
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(layout.createSequentialGroup()
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                    .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addGroup(javax.swing.GroupLayout.Alignment.LEADING, layout.createSequentialGroup()
                         .addComponent(jLabel1)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(jTextFieldHost))
-                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+                    .addGroup(layout.createSequentialGroup()
                         .addGap(0, 0, Short.MAX_VALUE)
                         .addComponent(jButtonOk)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(jButtonCancel))
-                    .addGroup(layout.createSequentialGroup()
+                    .addGroup(javax.swing.GroupLayout.Alignment.LEADING, layout.createSequentialGroup()
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addComponent(jCheckBoxGroundTruth)
                             .addComponent(jCheckBoxMulticast)
                             .addComponent(jCheckBoxStartRecording))
-                        .addGap(0, 133, Short.MAX_VALUE))
-                    .addGroup(layout.createSequentialGroup()
+                        .addGap(0, 143, Short.MAX_VALUE))
+                    .addGroup(javax.swing.GroupLayout.Alignment.LEADING, layout.createSequentialGroup()
                         .addComponent(jLabel2)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(jTextFieldVersion)))
@@ -169,7 +208,9 @@ public class OptitrackSetupJPanel extends javax.swing.JPanel {
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jLabel2)
                     .addComponent(jTextFieldVersion, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jButtonCancel)
                     .addComponent(jButtonOk))
@@ -189,6 +230,7 @@ public class OptitrackSetupJPanel extends javax.swing.JPanel {
 
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.ButtonGroup buttonGroup1;
     private javax.swing.JButton jButtonCancel;
     private javax.swing.JButton jButtonOk;
     private javax.swing.JCheckBox jCheckBoxGroundTruth;
@@ -196,6 +238,9 @@ public class OptitrackSetupJPanel extends javax.swing.JPanel {
     private javax.swing.JCheckBox jCheckBoxStartRecording;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
+    private javax.swing.JPanel jPanel1;
+    private javax.swing.JRadioButton jRadioButtonOptitrack;
+    private javax.swing.JRadioButton jRadioButtonVicon;
     private javax.swing.JTextField jTextFieldHost;
     private javax.swing.JTextField jTextFieldVersion;
     // End of variables declaration//GEN-END:variables

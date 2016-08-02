@@ -25,13 +25,18 @@ package humantrackingperformancemetrics;
  *
  * @author Will Shackleford {@literal <william.shackleford@nist.gov>}
  */
-public class OptitrackSetupOptions {
+public class DeviceSetupOptions {
 
     private final String host;
     private final String versionString;
     private final boolean multicast;
     private final boolean groundtruth;
     private final boolean startRecording;
+    private final DeviceTypeEnum deviceType;
+
+    public DeviceTypeEnum getDeviceType() {
+        return deviceType;
+    }
 
     public String getHost() {
         return host;
@@ -54,12 +59,18 @@ public class OptitrackSetupOptions {
     }
 
     
-    public OptitrackSetupOptions(String host, String versionString, boolean multicast, boolean groundtruth, boolean startRecording) {
+    public DeviceSetupOptions(String host, 
+            String versionString, 
+            boolean multicast, 
+            boolean groundtruth, 
+            boolean startRecording,
+            DeviceTypeEnum deviceType) {
         this.host = host;
         this.versionString = versionString;
         this.multicast = multicast;
         this.groundtruth = groundtruth;
         this.startRecording = startRecording;
+        this.deviceType = deviceType;
     }
 
     

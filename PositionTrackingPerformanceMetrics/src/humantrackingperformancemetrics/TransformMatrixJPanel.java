@@ -231,9 +231,9 @@ public class TransformMatrixJPanel extends javax.swing.JPanel {
                 }
             }
             if (null != connection) {
-                connection.transform = transform;
-                connection.apply_transform = this.jCheckBoxEnable.isSelected();
-                connection.transform_filename = this.filename;
+                connection.setTransform(transform);
+                connection.setApplyTransform(this.jCheckBoxEnable.isSelected());
+                connection.setTransformFilename(this.filename);
             }
             this.setVisible(false);
             if (null != this.dialog) {
@@ -283,12 +283,12 @@ public class TransformMatrixJPanel extends javax.swing.JPanel {
     static public void showDialog(Frame parent, MonitoredConnection connection) {
         TransformMatrixJPanel transform_panel = new TransformMatrixJPanel();
         transform_panel.connection = connection;
-        if (connection.transform != null) {
-            transform_panel.loadTransform(connection.transform);
-            transform_panel.jCheckBoxEnable.setSelected(connection.apply_transform);
-        } else if (connection.transform_filename != null) {
+        if (connection.getTransform() != null) {
+            transform_panel.loadTransform(connection.getTransform());
+            transform_panel.jCheckBoxEnable.setSelected(connection.isApplyTransform());
+        } else if (connection.getTransformFilename() != null) {
             try {
-                File f = new File(connection.transform_filename);
+                File f = new File(connection.getTransformFilename());
                 if (f.exists() && f.canRead()) {
                     transform_panel.LoadFile(f);
                 }

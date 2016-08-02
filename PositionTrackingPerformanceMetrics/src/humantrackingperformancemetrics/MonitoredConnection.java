@@ -10,6 +10,8 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.net.Socket;
+import java.util.LinkedList;
+import java.util.List;
 import javax.swing.JOptionPane;
 
 /**
@@ -18,16 +20,16 @@ import javax.swing.JOptionPane;
  *
  * @author Will Shackleford <shackle@nist.gov>
  */
-public class MonitoredConnection implements Runnable {
+public class MonitoredConnection implements Runnable, ConnectionInterface {
 
-    Socket socket;
-    boolean is_groundtruth;
-    String source = "Default";
-    private boolean alert_closed = true;
-    public volatile long updates = 0;
-    long required_updates_per_period = 100;
-    boolean use_time_recieved = false;
-    boolean monitor_connection = false;
+    private Socket socket;
+    private boolean groundtruth;
+    protected String source = "Default";
+    private boolean alertClosed = true;
+    private volatile long updates = 0;
+    private long requiredUpdatesPerPeriod = 100;
+    private boolean useTimeRecieved = false;
+    private boolean monitorConnection = false;
     private long last_monitor_updates = 0;
     private Thread t;
     private java.util.Timer monitor_timer = null;
@@ -37,11 +39,11 @@ public class MonitoredConnection implements Runnable {
     private int monitor_period = 5000;
     volatile private int update_pending_count = 0;
     volatile private int alert_pending_count = 0;
-    public HTPM_JFrame htpm_jframe = null;
-    public double transform[];
-    public boolean apply_transform=false;
-    public String transform_filename;
-    
+    private HTPM_JFrame htpm_jframe = null;
+    private double transform[];
+    private boolean applyTransform=false;
+    private String transformFilename;
+
     public MonitoredConnection(final HTPM_JFrame _htpm_jframe) {
         this.htpm_jframe = htpm_jframe;
         init();
@@ -58,11 +60,11 @@ public class MonitoredConnection implements Runnable {
         if (null != htpm_jframe
                 && null != htpm_jframe.default_client) {
             htpm_jframe.setLive(true);
-            monitor_connection = htpm_jframe.default_client.monitor_connection;
+            monitorConnection = htpm_jframe.default_client.monitorConnection;
             monitor_period = htpm_jframe.default_client.monitor_period;
-            use_time_recieved = htpm_jframe.default_client.use_time_recieved;
-            required_updates_per_period = htpm_jframe.default_client.required_updates_per_period;
-            this.apply_transform = htpm_jframe.default_client.apply_transform;
+            useTimeRecieved = htpm_jframe.default_client.useTimeRecieved;
+            requiredUpdatesPerPeriod = htpm_jframe.default_client.requiredUpdatesPerPeriod;
+            this.applyTransform = htpm_jframe.default_client.applyTransform;
             this.transform = htpm_jframe.default_client.transform;
         }
     }
@@ -86,7 +88,7 @@ public class MonitoredConnection implements Runnable {
             monitor_timer.purge();
             monitor_timer = null;
         }
-        if (!monitor_connection 
+        if (!monitorConnection 
                 || (null != htpm_jframe && this == htpm_jframe.default_client)) {
             return;
         }
@@ -96,7 +98,7 @@ public class MonitoredConnection implements Runnable {
                 if (closed || !htpm_jframe.live) {
                     return;
                 }
-                if (null != ps && updates == last_monitor_updates
+                if (null != ps && getUpdates() == last_monitor_updates
                         && alert_pending_count == 0) {
                     ps.println("checking connection");
                     if (ps.checkError()) {
@@ -108,9 +110,9 @@ public class MonitoredConnection implements Runnable {
                                 int o = JOptionPane.showConfirmDialog(HTPM_JFrame.main_frame,
                                         "Connection check failed to " + source + " : Keep Monitoring?");
                                 if (o != JOptionPane.YES_OPTION) {
-                                    monitor_connection = false;
+                                    setMonitorConnection(false);
                                     restart_monitor();
-                                    htpm_jframe.UpdateConnectionsList();
+                                    getHtpm_jframe().UpdateConnectionsList();
                                 }
                                 alert_pending_count--;
                             }
@@ -118,7 +120,7 @@ public class MonitoredConnection implements Runnable {
                         close();
                     }
                 }
-                if (updates - last_monitor_updates < required_updates_per_period
+                if (getUpdates() - last_monitor_updates < getRequiredUpdatesPerPeriod()
                         && alert_pending_count == 0) {
                     alert_pending_count++;
                     java.awt.EventQueue.invokeLater(new Runnable() {
@@ -128,15 +130,15 @@ public class MonitoredConnection implements Runnable {
                             int o = JOptionPane.showConfirmDialog(HTPM_JFrame.main_frame,
                                     "Failed to get sufficient updates from  " + source + " : Keep Monitoring?");
                             if (o != JOptionPane.YES_OPTION) {
-                                monitor_connection = false;
+                                setMonitorConnection(false);
                                 restart_monitor();
-                                htpm_jframe.UpdateConnectionsList();
+                                getHtpm_jframe().UpdateConnectionsList();
                             }
                             alert_pending_count--;
                         }
                     });
                 }
-                last_monitor_updates = updates;
+                last_monitor_updates = getUpdates();
             }
         };
         monitor_timer = new java.util.Timer();
@@ -169,14 +171,34 @@ public class MonitoredConnection implements Runnable {
             java.awt.EventQueue.invokeLater(new Runnable() {
                 @Override
                 public void run() {
-                    htpm_jframe.UpdateConnectionCount(c);
+                    getHtpm_jframe().UpdateConnectionCount(c);
                     update_pending_count--;
                 }
             });
         }
     }
 
-    public double TIME_SCALE = 1.0;
+        private long missedFrames = 0;
+
+    /**
+     * Get the value of missedFrames
+     *
+     * @return the value of missedFrames
+     */
+    public long getMissedFrames() {
+        return missedFrames;
+    }
+
+    /**
+     * Set the value of missedFrames
+     *
+     * @param missedFrames new value of missedFrames
+     */
+    public void setMissedFrames(long missedFrames) {
+        this.missedFrames = missedFrames;
+    }
+
+    private double TIME_SCALE = 1.0;
     
     @Override
     public void run() {
@@ -205,14 +227,14 @@ public class MonitoredConnection implements Runnable {
                 }
                 TrackPoint tp = HTPM_JFrame.parseTrackPointLine(line,
                         new CsvParseOptions());
-                if (this.use_time_recieved) {
+                if (this.useTimeRecieved) {
                     tp.time = time_recvd;
                 }
-                if(this.apply_transform) {
+                if(this.applyTransform) {
                     tp.applyTransform(transform);
                 }
 
-                if (is_groundtruth) {
+                if (groundtruth) {
                     HTPM_JFrame.AddTrackPointToTracks(htpm_jframe.getTracks(), 
                             tp, true, source, Color.red,
                             htpm_jframe.live,line_num,
@@ -262,7 +284,7 @@ public class MonitoredConnection implements Runnable {
                 }
             });
         }
-        if (this.alert_closed && this.monitor_connection && line == null) {
+        if (this.alertClosed && this.monitorConnection && line == null) {
             java.awt.EventQueue.invokeLater(new Runnable() {
                 @Override
                 public void run() {
@@ -276,7 +298,7 @@ public class MonitoredConnection implements Runnable {
 
     public void close() {
         try {
-            this.alert_closed = false;
+            this.alertClosed = false;
             closed = true;
             if (null != t) {
                 t.interrupt();
@@ -314,5 +336,190 @@ public class MonitoredConnection implements Runnable {
             e.printStackTrace();
         }
         ;
+    }
+
+
+    /**
+     * @return the updates
+     */
+    public long getUpdates() {
+        return updates;
+    }
+
+    /**
+     * @return the htpm_jframe
+     */
+    public HTPM_JFrame getHtpm_jframe() {
+        return htpm_jframe;
+    }
+
+
+    /**
+     * @return the TIME_SCALE
+     */
+    public double getTIME_SCALE() {
+        return TIME_SCALE;
+    }
+
+    /**
+     * @return the socket
+     */
+    public Socket getSocket() {
+        return socket;
+    }
+
+    /**
+     * @param socket the socket to set
+     */
+    public void setSocket(Socket socket) {
+        this.socket = socket;
+    }
+
+    /**
+     * @return the groundtruth
+     */
+    public boolean isGroundtruth() {
+        return groundtruth;
+    }
+
+    /**
+     * @param groundtruth the groundtruth to set
+     */
+    public void setGroundtruth(boolean groundtruth) {
+        this.groundtruth = groundtruth;
+    }
+
+    /**
+     * @return the requiredUpdatesPerPeriod
+     */
+    public long getRequiredUpdatesPerPeriod() {
+        return requiredUpdatesPerPeriod;
+    }
+
+    /**
+     * @param requiredUpdatesPerPeriod the requiredUpdatesPerPeriod to set
+     */
+    public void setRequiredUpdatesPerPeriod(long requiredUpdatesPerPeriod) {
+        this.requiredUpdatesPerPeriod = requiredUpdatesPerPeriod;
+    }
+
+    /**
+     * @return the useTimeRecieved
+     */
+    public boolean isUseTimeRecieved() {
+        return useTimeRecieved;
+    }
+
+    /**
+     * @param useTimeRecieved the useTimeRecieved to set
+     */
+    public void setUseTimeRecieved(boolean useTimeRecieved) {
+        this.useTimeRecieved = useTimeRecieved;
+    }
+
+    /**
+     * @return the monitorConnection
+     */
+    public boolean isMonitorConnection() {
+        return monitorConnection;
+    }
+
+    /**
+     * @param monitorConnection the monitorConnection to set
+     */
+    public void setMonitorConnection(boolean monitorConnection) {
+        this.monitorConnection = monitorConnection;
+    }
+
+    /**
+     * @return the transform
+     */
+    public double[] getTransform() {
+        return transform;
+    }
+
+    /**
+     * @param transform the transform to set
+     */
+    public void setTransform(double[] transform) {
+        this.transform = transform;
+    }
+
+    /**
+     * @return the applyTransform
+     */
+    public boolean isApplyTransform() {
+        return applyTransform;
+    }
+
+    /**
+     * @param applyTransform the applyTransform to set
+     */
+    public void setApplyTransform(boolean applyTransform) {
+        this.applyTransform = applyTransform;
+    }
+
+    /**
+     * @return the transformFilename
+     */
+    public String getTransformFilename() {
+        return transformFilename;
+    }
+
+    /**
+     * @param transformFilename the transformFilename to set
+     */
+    public void setTransformFilename(String transformFilename) {
+        this.transformFilename = transformFilename;
+    }
+
+    /**
+     * @return the source
+     */
+    public String getSource() {
+        return source;
+    }
+
+    /**
+     * @param source the source to set
+     */
+    public void setSource(String source) {
+        this.source = source;
+    }
+
+    @Override
+    public void updateData(ConnectionUpdate update) throws Exception {
+    }
+
+    public boolean try_ping(int max_tries, long sleep_millis) {
+        return true;
+    }
+
+    protected List<Runnable> listeners = null;
+    
+   /**
+     * Add a listener that will be called whenever a data frame is received.
+     *
+     * @param r listener to add
+     */
+    @Override
+    public void addListener(Runnable r) {
+        if (null == listeners) {
+            listeners = new LinkedList<Runnable>();
+        }
+        listeners.add(r);
+    }
+
+    /**
+     * Remove a previously added listener.
+     *
+     * @param r listener to remove
+     */
+    @Override
+    public void removeListener(Runnable r) {
+        if (null == listeners) {
+            listeners = new LinkedList<Runnable>();
+        }
+        listeners.remove(r);
     }
 }

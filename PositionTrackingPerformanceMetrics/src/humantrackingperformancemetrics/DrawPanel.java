@@ -988,7 +988,7 @@ public class DrawPanel extends JPanel {
             double inverse_scale,
             double _x_min,
             double _y_min) {
-        HTPM_JFrame.settings s = HTPM_JFrame.s;
+        HTPM_JFrame.Settings s = HTPM_JFrame.s;
         double scale = 1 / inverse_scale;
         g.setColor(Color.BLACK);
         g.fillRect(0, 0, d.width, d.height);
@@ -1020,7 +1020,7 @@ public class DrawPanel extends JPanel {
             double inverse_scale,
             double _x_min,
             double _y_min) {
-        HTPM_JFrame.settings s = HTPM_JFrame.s;
+        HTPM_JFrame.Settings s = HTPM_JFrame.s;
         double scale = 1 / inverse_scale;
         g.setColor(Color.BLACK);
         g.fillRect(0, 0, d.width, d.height);
@@ -1052,7 +1052,7 @@ public class DrawPanel extends JPanel {
             double inverse_scale,
             double _x_min,
             double _y_min) {
-        HTPM_JFrame.settings s = HTPM_JFrame.s;
+        HTPM_JFrame.Settings s = HTPM_JFrame.s;
         double scale = 1 / inverse_scale;
         g.setColor(Color.BLACK);
         g.fillRect(0, 0, d.width, d.height);
@@ -1078,7 +1078,7 @@ public class DrawPanel extends JPanel {
             double inverse_scale,
             double _x_min,
             double _y_min) {
-        HTPM_JFrame.settings s = HTPM_JFrame.s;
+        HTPM_JFrame.Settings s = HTPM_JFrame.s;
         double scale = 1 / inverse_scale;
         g.setColor(Color.BLACK);
         g.fillRect(0, 0, d.width, d.height);

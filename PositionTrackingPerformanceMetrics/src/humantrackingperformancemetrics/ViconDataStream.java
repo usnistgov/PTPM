@@ -28,6 +28,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.swing.JOptionPane;
 import vicontojava.ViconClient;
 
 /**
@@ -35,10 +36,6 @@ import vicontojava.ViconClient;
  * @author Will Shackleford {@literal <william.shackleford@nist.gov>}
  */
 public class ViconDataStream extends MonitoredConnection {
-
-    static {
-        System.loadLibrary("ViconJavaSwigLibrary");
-    }
 
     private ViconClient client = null;
     private final String host;
@@ -119,6 +116,12 @@ public class ViconDataStream extends MonitoredConnection {
                 }
             }
         } catch (Exception exception) {
+            javax.swing.SwingUtilities.invokeLater(new Runnable() {
+                @Override
+                public void run() {
+                    JOptionPane.showMessageDialog(null, "Failed to connect to Vicon host="+host+" : "+exception.getMessage());
+                }
+            });
             exception.printStackTrace();
         }
     }
@@ -145,7 +148,6 @@ public class ViconDataStream extends MonitoredConnection {
         timeSinceLastRecvTime = time - lastLocalRecvTime;
         localRecvTime = time;
         lastLocalRecvTime = time;
-        PrintStream optitrack_print_stream = update.getPrintStream();
         List<TrackPoint> frameList = null;
         long frameNumber = -1;
         double latency = Double.NaN;
@@ -243,7 +245,7 @@ public class ViconDataStream extends MonitoredConnection {
 //        try {
         for (TrackPoint tp : frameList) {
             boolean new_update
-                    = updatePoint(update,tp);
+                    = updatePoint(update, tp);
             point_updated = point_updated || new_update;
 
         }
@@ -258,10 +260,9 @@ public class ViconDataStream extends MonitoredConnection {
 //        }
     }
 
-    
-    private boolean updatePoint(ConnectionUpdate update, TrackPoint pt) throws Exception{
+    private boolean updatePoint(ConnectionUpdate update, TrackPoint pt) throws Exception {
         boolean point_updated = false;
-        
+
         List<Track> allTracks = update.getAllTracks();
         if (null == allTracks) {
             allTracks = new ArrayList<Track>();
@@ -356,7 +357,7 @@ public class ViconDataStream extends MonitoredConnection {
         //setCurrentTime(tp.time + 0.00001);
         return true;
     }
-    
+
     @Override
     public void close() {
         super.close();

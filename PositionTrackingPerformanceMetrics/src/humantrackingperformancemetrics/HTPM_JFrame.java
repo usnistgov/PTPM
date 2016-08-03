@@ -27,6 +27,7 @@ import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FilenameFilter;
@@ -328,6 +329,7 @@ public class HTPM_JFrame extends javax.swing.JFrame {
                 if (!this.recent_gt_files.containsKey(o.filename)) {
                     this.recent_gt_files.put(o.filename, o);
                     this.jMenuRecentGroundTruthCsv.add(this.createRecentFileMenuItem(o, _is_groundtruth));
+                    this.jMenuRecentGroundTruthCsvToSpreadsheet.add(this.createRecentFileMenuItem(o, _is_groundtruth));
                 }
             } else {
                 if (null == this.recent_sut_files) {
@@ -335,6 +337,7 @@ public class HTPM_JFrame extends javax.swing.JFrame {
                 }
                 if (!this.recent_sut_files.containsKey(o.filename)) {
                     this.jMenuRecentSystemUnderTestCsv.add(this.createRecentFileMenuItem(o, _is_groundtruth));
+                    this.jMenuRecentSystemUnderTestCsvToSpreadsheet.add(this.createRecentFileToSpreadsheetMenuItem(o, _is_groundtruth));
                     this.recent_sut_files.put(o.filename, o);
                 }
             }
@@ -714,8 +717,12 @@ public class HTPM_JFrame extends javax.swing.JFrame {
         jMenuItemGotoTime = new javax.swing.JMenuItem();
         jMenuItemGotoPlotterMinTime = new javax.swing.JMenuItem();
         jMenuItemClearData = new javax.swing.JMenuItem();
+        jSeparator7 = new javax.swing.JPopupMenu.Separator();
         jMenuItemStartRecording = new javax.swing.JMenuItem();
         jMenuItemStopRecording = new javax.swing.JMenuItem();
+        jSeparator6 = new javax.swing.JPopupMenu.Separator();
+        jMenuRecentGroundTruthCsvToSpreadsheet = new javax.swing.JMenu();
+        jMenuRecentSystemUnderTestCsvToSpreadsheet = new javax.swing.JMenu();
         jMenuConnections = new javax.swing.JMenu();
         jCheckBoxMenuItemOptitrackVicon = new javax.swing.JCheckBoxMenuItem();
         jCheckBoxMenuItemAcceptGT = new javax.swing.JCheckBoxMenuItem();
@@ -858,11 +865,11 @@ public class HTPM_JFrame extends javax.swing.JFrame {
         jTree1.setModel(new javax.swing.tree.DefaultTreeModel(treeNode1));
         jTree1.setPreferredSize(new java.awt.Dimension(300, 66));
         jTree1.addTreeExpansionListener(new javax.swing.event.TreeExpansionListener() {
-            public void treeExpanded(javax.swing.event.TreeExpansionEvent evt) {
-                jTree1TreeExpanded(evt);
-            }
             public void treeCollapsed(javax.swing.event.TreeExpansionEvent evt) {
                 jTree1TreeCollapsed(evt);
+            }
+            public void treeExpanded(javax.swing.event.TreeExpansionEvent evt) {
+                jTree1TreeExpanded(evt);
             }
         });
         jTree1.addTreeSelectionListener(new javax.swing.event.TreeSelectionListener() {
@@ -1196,6 +1203,7 @@ public class HTPM_JFrame extends javax.swing.JFrame {
             }
         });
         jMenu1.add(jMenuItemClearData);
+        jMenu1.add(jSeparator7);
 
         jMenuItemStartRecording.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_R, 0));
         jMenuItemStartRecording.setText("Start Recording");
@@ -1214,6 +1222,13 @@ public class HTPM_JFrame extends javax.swing.JFrame {
             }
         });
         jMenu1.add(jMenuItemStopRecording);
+        jMenu1.add(jSeparator6);
+
+        jMenuRecentGroundTruthCsvToSpreadsheet.setText("Recent Ground Truth CSV To Spreadsheet");
+        jMenu1.add(jMenuRecentGroundTruthCsvToSpreadsheet);
+
+        jMenuRecentSystemUnderTestCsvToSpreadsheet.setText("Recent System Under Test  CSV To Spreadsheet");
+        jMenu1.add(jMenuRecentSystemUnderTestCsvToSpreadsheet);
 
         jMenuBar1.add(jMenu1);
 
@@ -2079,6 +2094,23 @@ public class HTPM_JFrame extends javax.swing.JFrame {
 
     private String groundTruthFileName = null;
 
+    public JMenuItem createRecentFileToSpreadsheetMenuItem(final CsvParseOptions o,
+            final boolean _is_ground_truth) {
+        JMenuItem mi = new JMenuItem();
+        mi.setText(o.filename);
+        mi.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                try {
+                    Desktop.getDesktop().open(new File(o.filename));
+                } catch (IOException ex) {
+                    Logger.getLogger(HTPM_JFrame.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            }
+        });
+        return mi;
+    }
+
     public JMenuItem createRecentFileMenuItem(final CsvParseOptions o,
             final boolean _is_ground_truth) {
         JMenuItem mi = new JMenuItem();
@@ -2138,13 +2170,7 @@ public class HTPM_JFrame extends javax.swing.JFrame {
                         }
                     }
                     o.filename = groundTruthFileName;
-                    File recentFilesDir = new File(System.getProperty("user.home"), ".htpm_recent_files");
-                    File recentGTFilesDir = new File(recentFilesDir, ".gt");
-                    recentGTFilesDir.mkdirs();
-                    File infoFile = File.createTempFile(f.getName() + "_", "_info.txt", recentGTFilesDir);
-                    PrintStream ps = new PrintStream(new FileOutputStream(infoFile));
-                    ps.println(o.toString());
-                    ps.close();
+                    saveRecentGTFileOptions(f, o);
                     this.jMenuRecentGroundTruthCsv.add(this.createRecentFileMenuItem(o, true));
                     if (null == gtlist) {
                         gtlist = LoadFile(groundTruthFileName, Color.red, true, o);
@@ -2161,6 +2187,17 @@ public class HTPM_JFrame extends javax.swing.JFrame {
             exception.printStackTrace();
         }
     }//GEN-LAST:event_jMenuItemOpenGroundTruthActionPerformed
+
+    private void saveRecentGTFileOptions(File f, CsvParseOptions o) throws IOException, FileNotFoundException {
+        File recentFilesDir = new File(System.getProperty("user.home"), ".htpm_recent_files");
+        File recentGTFilesDir = new File(recentFilesDir, ".gt");
+        recentGTFilesDir.mkdirs();
+        File infoFile = File.createTempFile(f.getName() + "_", "_info.txt", recentGTFilesDir);
+        PrintStream ps = new PrintStream(new FileOutputStream(infoFile));
+        ps.println("filename=" + f.getCanonicalPath());
+        ps.println(o.toString());
+        ps.close();
+    }
 
     private void addListAtTreeNode(DefaultMutableTreeNode top_child, List<Track> tracks) {
         if (null != tracks) {
@@ -3129,13 +3166,7 @@ public class HTPM_JFrame extends javax.swing.JFrame {
                     System.out.println("You chose to open this file system under test file: "
                             + systemUnderTestFileName);
                     o.filename = systemUnderTestFileName;
-                    File recentFilesDir = new File(System.getProperty("user.home"), ".htpm_recent_files");
-                    File recentSUTFilesDir = new File(recentFilesDir, ".sut");
-                    recentSUTFilesDir.mkdirs();
-                    File infoFile = File.createTempFile(f.getName() + "_", "_info.txt", recentSUTFilesDir);
-                    PrintStream ps = new PrintStream(new FileOutputStream(infoFile));
-                    ps.println(o.toString());
-                    ps.close();
+                    saveRecentSutFileOptions(f, o);
                     this.jMenuRecentSystemUnderTestCsv.add(this.createRecentFileMenuItem(o, false));
                     List<Track> newList = LoadFile(systemUnderTestFileName,
                             Color.blue, false, o);
@@ -3147,6 +3178,17 @@ public class HTPM_JFrame extends javax.swing.JFrame {
             exception.printStackTrace();
         }
     }//GEN-LAST:event_jMenuItemOpenSutCsvActionPerformed
+
+    private void saveRecentSutFileOptions(File f, CsvParseOptions o) throws IOException, FileNotFoundException {
+        File recentFilesDir = new File(System.getProperty("user.home"), ".htpm_recent_files");
+        File recentSUTFilesDir = new File(recentFilesDir, ".sut");
+        recentSUTFilesDir.mkdirs();
+        File infoFile = File.createTempFile(f.getName() + "_", "_info.txt", recentSUTFilesDir);
+        PrintStream ps = new PrintStream(new FileOutputStream(infoFile));
+        ps.println("filename=" + f.getCanonicalPath());
+        ps.println(o.toString());
+        ps.close();
+    }
 
     private void fixJtreeSize() {
         // This is a somewhat poor heuristic for getting the size of the
@@ -3509,7 +3551,7 @@ public class HTPM_JFrame extends javax.swing.JFrame {
      * Update all the tracks and displays using all the latest data from
      * optitrack.
      */
-    public void UpdateOptitrackData() {
+    public void updateOptitrackData() {
         if (null == ods) {
             return;
         }
@@ -3523,6 +3565,8 @@ public class HTPM_JFrame extends javax.swing.JFrame {
         optitrackConnectionUpdate.setAllTracks(drawPanel1.tracks);
         optitrackConnectionUpdate.setCurrentDeviceTracks(optitrack_tracks);
         optitrackConnectionUpdate.setNewTrackRunnable(newTrackRunnable);
+        optitrackConnectionUpdate.setPrintStream(data_print_stream);
+        optitrackConnectionUpdate.setCsvLinePrinter(csvLinePrinter);
         try {
             ods.updateData(optitrackConnectionUpdate);
             sutlist = optitrackConnectionUpdate.getSutlist();
@@ -3654,7 +3698,7 @@ public class HTPM_JFrame extends javax.swing.JFrame {
      * Update all the tracks and displays using all the latest data from
      * optitrack.
      */
-    public void UpdateViconData() {
+    public void updateViconData() {
         if (null == viconStream) {
             return;
         }
@@ -3668,6 +3712,8 @@ public class HTPM_JFrame extends javax.swing.JFrame {
         viconConnectionUpdate.setAllTracks(drawPanel1.tracks);
         viconConnectionUpdate.setCurrentDeviceTracks(vicon_tracks);
         viconConnectionUpdate.setNewTrackRunnable(newTrackRunnable);
+        viconConnectionUpdate.setPrintStream(data_print_stream);
+        viconConnectionUpdate.setCsvLinePrinter(csvLinePrinter);
         try {
             viconStream.updateData(viconConnectionUpdate);
             sutlist = viconConnectionUpdate.getSutlist();
@@ -3813,7 +3859,7 @@ public class HTPM_JFrame extends javax.swing.JFrame {
                 null, null,
                 _default ? JOptionPane.YES_OPTION : JOptionPane.NO_OPTION);
     }
-    private PrintStream optitrack_print_stream = null;
+    private PrintStream data_print_stream = null;
 
     public static String dateString(Calendar c) {
         return "" + c.get(Calendar.YEAR) + "-"
@@ -3836,6 +3882,9 @@ public class HTPM_JFrame extends javax.swing.JFrame {
         return dateString(c);
     }
 
+    final private List<File> gtRecordingFiles = new ArrayList<>();
+    final private List<File> sutRecordingFiles = new ArrayList<>();
+
     public void startRecording() {
 
         try {
@@ -3849,10 +3898,10 @@ public class HTPM_JFrame extends javax.swing.JFrame {
                     "Comma Seperated Variable Files", "csv");
             chooser.setFileFilter(filter);
             try {
-                String name_base_s = "optitrac_" + dateString() + "_";
+                String devname = (deviceSetupOptions != null) ? deviceSetupOptions.getDeviceType().toString() : "data";
+                String name_base_s = devname + "_" + dateString() + "_";
                 System.out.println("name_base_s = " + name_base_s);
-                f = File.createTempFile(name_base_s, ".csv",
-                        dir);
+                f = File.createTempFile(name_base_s, ".csv", dir);
                 chooser.setSelectedFile(f);
             } catch (Exception e) {
                 e.printStackTrace();
@@ -3861,8 +3910,13 @@ public class HTPM_JFrame extends javax.swing.JFrame {
             if (returnVal == JFileChooser.APPROVE_OPTION) {
                 f = chooser.getSelectedFile();
                 s.save_file_dir = f.getParentFile().getCanonicalPath();
-                this.optitrack_print_stream = new PrintStream(new FileOutputStream(f));
-                printHeader(this.optitrack_print_stream);
+                if (null != deviceSetupOptions && deviceSetupOptions.isGroundtruth()) {
+                    gtRecordingFiles.add(f);
+                } else {
+                    sutRecordingFiles.add(f);
+                }
+                this.data_print_stream = new PrintStream(new FileOutputStream(f));
+                printHeader(this.data_print_stream);
                 this.jCheckBoxRecording.setSelected(true);
             }
         } catch (Exception e) {
@@ -3875,8 +3929,8 @@ public class HTPM_JFrame extends javax.swing.JFrame {
         try {
             stopRecording();
             File f = new File(filename);
-            this.optitrack_print_stream = new PrintStream(new FileOutputStream(f));
-            printHeader(this.optitrack_print_stream);
+            this.data_print_stream = new PrintStream(new FileOutputStream(f));
+            printHeader(this.data_print_stream);
             this.jCheckBoxRecording.setSelected(true);
         } catch (Exception e) {
             e.printStackTrace();
@@ -3885,10 +3939,26 @@ public class HTPM_JFrame extends javax.swing.JFrame {
 
     public void stopRecording() {
         this.jCheckBoxRecording.setSelected(false);
-        if (null != optitrack_print_stream) {
-            optitrack_print_stream.close();
-            optitrack_print_stream = null;
+        if (null != data_print_stream) {
+            data_print_stream.close();
+            data_print_stream = null;
         }
+        File f;
+        while (gtRecordingFiles.size() > 0 && (f = gtRecordingFiles.remove(0)) != null) {
+            try {
+                saveRecentGTFileOptions(f, CsvParseOptions.DEFAULT);
+            } catch (IOException ex) {
+                Logger.getLogger(HTPM_JFrame.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+        while (sutRecordingFiles.size() > 0 && (f = sutRecordingFiles.remove(0)) != null) {
+            try {
+                saveRecentSutFileOptions(f, CsvParseOptions.DEFAULT);
+            } catch (IOException ex) {
+                Logger.getLogger(HTPM_JFrame.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+        this.reloadRecentFileInfo();
     }
 
     public boolean ConnectToOptitrack(final String server, final boolean use_multicast, int major, int minor) {
@@ -3918,13 +3988,33 @@ public class HTPM_JFrame extends javax.swing.JFrame {
                     s.optitrack_trasform_filename = ods.getTransformFilename();
                 }
                 action_count++;
-                UpdateOptitrackData();
+                updateOptitrackData();
             }
         });
         return true;
     }
 
     public MonitoredConnection viconStream = null;
+
+    private DeviceSetupOptions deviceSetupOptions;
+
+    /**
+     * Get the value of deviceSetupOptions
+     *
+     * @return the value of deviceSetupOptions
+     */
+    public DeviceSetupOptions getDeviceSetupOptions() {
+        return deviceSetupOptions;
+    }
+
+    /**
+     * Set the value of deviceSetupOptions
+     *
+     * @param deviceSetupOptions new value of deviceSetupOptions
+     */
+    public void setDeviceSetupOptions(DeviceSetupOptions deviceSetupOptions) {
+        this.deviceSetupOptions = deviceSetupOptions;
+    }
 
     private void jCheckBoxMenuItemOptitrackViconActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jCheckBoxMenuItemOptitrackViconActionPerformed
         if (ods != null) {
@@ -3937,6 +4027,7 @@ public class HTPM_JFrame extends javax.swing.JFrame {
 
             DeviceSetupJPanel panel = DeviceSetupJPanel.showDialog(this);
             DeviceSetupOptions options = panel.getOptions();
+            this.deviceSetupOptions = options;
             if (panel.isCancelled() || options == null) {
                 this.jCheckBoxMenuItemOptitrackVicon.setSelected(false);
                 return;
@@ -3989,7 +4080,7 @@ public class HTPM_JFrame extends javax.swing.JFrame {
                                 s.optitrack_trasform_filename = viconStream.getTransformFilename();
                             }
                             action_count++;
-                            UpdateViconData();
+                            updateViconData();
                         }
                     });
                     break;
@@ -4123,7 +4214,8 @@ public class HTPM_JFrame extends javax.swing.JFrame {
             double end_time;
             int num_tracks;
             int num_points;
-        };
+        }
+        ;
 
         List<FileInfo> gtFilesInfoList = new LinkedList<>();
         BufferedReader br = null;
@@ -7613,8 +7705,10 @@ public class HTPM_JFrame extends javax.swing.JFrame {
     private javax.swing.JMenu jMenuMode;
     private javax.swing.JMenu jMenuPanAndZoom;
     private javax.swing.JMenu jMenuRecentGroundTruthCsv;
+    private javax.swing.JMenu jMenuRecentGroundTruthCsvToSpreadsheet;
     private javax.swing.JMenu jMenuRecentMatchFiles;
     private javax.swing.JMenu jMenuRecentSystemUnderTestCsv;
+    private javax.swing.JMenu jMenuRecentSystemUnderTestCsvToSpreadsheet;
     private javax.swing.JMenu jMenuView;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JRadioButton jRadioButtonMeasure;
@@ -7636,6 +7730,8 @@ public class HTPM_JFrame extends javax.swing.JFrame {
     private javax.swing.JPopupMenu.Separator jSeparator3;
     private javax.swing.JSeparator jSeparator4;
     private javax.swing.JToolBar.Separator jSeparator5;
+    private javax.swing.JPopupMenu.Separator jSeparator6;
+    private javax.swing.JPopupMenu.Separator jSeparator7;
     private javax.swing.JSlider jSliderConfidence;
     private javax.swing.JSlider jSliderTime;
     private javax.swing.JSlider jSliderZoom;

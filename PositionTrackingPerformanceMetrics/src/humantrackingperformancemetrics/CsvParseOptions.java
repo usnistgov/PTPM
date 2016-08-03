@@ -53,7 +53,7 @@ public class CsvParseOptions implements Cloneable {
                 } else {
                     sb.append(val);
                 }
-                sb.append("\n");
+                sb.append(System.lineSeparator());
             } catch (IllegalArgumentException illegalArgumentException) {
             } catch (IllegalAccessException illegalAccessException) {
             }

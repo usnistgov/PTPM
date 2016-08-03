@@ -139,6 +139,7 @@ public class DeviceSetupJPanel extends javax.swing.JPanel {
         jRadioButtonVicon.setText("Vicon");
 
         buttonGroup1.add(jRadioButtonOptitrack);
+        jRadioButtonOptitrack.setSelected(true);
         jRadioButtonOptitrack.setText("Optitrack");
 
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);

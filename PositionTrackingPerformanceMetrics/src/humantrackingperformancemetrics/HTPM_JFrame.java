@@ -329,7 +329,7 @@ public class HTPM_JFrame extends javax.swing.JFrame {
                 if (!this.recent_gt_files.containsKey(o.filename)) {
                     this.recent_gt_files.put(o.filename, o);
                     this.jMenuRecentGroundTruthCsv.add(this.createRecentFileMenuItem(o, _is_groundtruth));
-                    this.jMenuRecentGroundTruthCsvToExternal.add(this.createRecentFileMenuItem(o, _is_groundtruth));
+                    this.jMenuRecentGroundTruthCsvToExternal.add(this.createRecentFileToExternalMenuItem(o, _is_groundtruth));
                 }
             } else {
                 if (null == this.recent_sut_files) {
@@ -337,7 +337,7 @@ public class HTPM_JFrame extends javax.swing.JFrame {
                 }
                 if (!this.recent_sut_files.containsKey(o.filename)) {
                     this.jMenuRecentSystemUnderTestCsv.add(this.createRecentFileMenuItem(o, _is_groundtruth));
-                    this.jMenuRecentSystemUnderTestCsvToExternal.add(this.createRecentFileToSpreadsheetMenuItem(o, _is_groundtruth));
+                    this.jMenuRecentSystemUnderTestCsvToExternal.add(this.createRecentFileToExternalMenuItem(o, _is_groundtruth));
                     this.recent_sut_files.put(o.filename, o);
                 }
             }
@@ -2094,7 +2094,7 @@ public class HTPM_JFrame extends javax.swing.JFrame {
 
     private String groundTruthFileName = null;
 
-    public JMenuItem createRecentFileToSpreadsheetMenuItem(final CsvParseOptions o,
+    public JMenuItem createRecentFileToExternalMenuItem(final CsvParseOptions o,
             final boolean _is_ground_truth) {
         JMenuItem mi = new JMenuItem();
         mi.setText(o.filename);
@@ -3565,7 +3565,7 @@ public class HTPM_JFrame extends javax.swing.JFrame {
         optitrackConnectionUpdate.setAllTracks(drawPanel1.tracks);
         optitrackConnectionUpdate.setCurrentDeviceTracks(optitrack_tracks);
         optitrackConnectionUpdate.setNewTrackRunnable(newTrackRunnable);
-        optitrackConnectionUpdate.setPrintStream(data_print_stream);
+        optitrackConnectionUpdate.setPrintStream(optitrack_print_stream);
         optitrackConnectionUpdate.setCsvLinePrinter(csvLinePrinter);
         try {
             ods.updateData(optitrackConnectionUpdate);
@@ -3712,7 +3712,7 @@ public class HTPM_JFrame extends javax.swing.JFrame {
         viconConnectionUpdate.setAllTracks(drawPanel1.tracks);
         viconConnectionUpdate.setCurrentDeviceTracks(vicon_tracks);
         viconConnectionUpdate.setNewTrackRunnable(newTrackRunnable);
-        viconConnectionUpdate.setPrintStream(data_print_stream);
+        viconConnectionUpdate.setPrintStream(vicon_print_stream);
         viconConnectionUpdate.setCsvLinePrinter(csvLinePrinter);
         try {
             viconStream.updateData(viconConnectionUpdate);
@@ -3859,7 +3859,9 @@ public class HTPM_JFrame extends javax.swing.JFrame {
                 null, null,
                 _default ? JOptionPane.YES_OPTION : JOptionPane.NO_OPTION);
     }
-    private PrintStream data_print_stream = null;
+
+    private PrintStream optitrack_print_stream = null;
+    private PrintStream vicon_print_stream = null;
 
     public static String dateString(Calendar c) {
         return "" + c.get(Calendar.YEAR) + "-"
@@ -3915,8 +3917,13 @@ public class HTPM_JFrame extends javax.swing.JFrame {
                 } else {
                     sutRecordingFiles.add(f);
                 }
-                this.data_print_stream = new PrintStream(new FileOutputStream(f));
-                printHeader(this.data_print_stream);
+                if (null != deviceSetupOptions && deviceSetupOptions.getDeviceType() == DeviceTypeEnum.VICON) {
+                    this.vicon_print_stream = new PrintStream(new FileOutputStream(f));
+                    printHeader(this.vicon_print_stream);
+                } else {
+                    this.optitrack_print_stream = new PrintStream(new FileOutputStream(f));
+                    printHeader(this.optitrack_print_stream);
+                }
                 this.jCheckBoxRecording.setSelected(true);
             }
         } catch (Exception e) {
@@ -3929,8 +3936,13 @@ public class HTPM_JFrame extends javax.swing.JFrame {
         try {
             stopRecording();
             File f = new File(filename);
-            this.data_print_stream = new PrintStream(new FileOutputStream(f));
-            printHeader(this.data_print_stream);
+            if (null != deviceSetupOptions && deviceSetupOptions.getDeviceType() == DeviceTypeEnum.VICON) {
+                this.vicon_print_stream = new PrintStream(new FileOutputStream(f));
+                printHeader(this.vicon_print_stream);
+            } else {
+                this.optitrack_print_stream = new PrintStream(new FileOutputStream(f));
+                printHeader(this.optitrack_print_stream);
+            }
             this.jCheckBoxRecording.setSelected(true);
         } catch (Exception e) {
             e.printStackTrace();
@@ -3939,9 +3951,13 @@ public class HTPM_JFrame extends javax.swing.JFrame {
 
     public void stopRecording() {
         this.jCheckBoxRecording.setSelected(false);
-        if (null != data_print_stream) {
-            data_print_stream.close();
-            data_print_stream = null;
+        if (null != vicon_print_stream) {
+            vicon_print_stream.close();
+            vicon_print_stream = null;
+        }
+        if (null != optitrack_print_stream) {
+            optitrack_print_stream.close();
+            optitrack_print_stream = null;
         }
         File f;
         while (gtRecordingFiles.size() > 0 && (f = gtRecordingFiles.remove(0)) != null) {

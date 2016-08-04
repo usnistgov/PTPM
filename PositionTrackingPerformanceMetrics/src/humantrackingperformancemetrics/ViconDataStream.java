@@ -311,6 +311,7 @@ public class ViconDataStream extends MonitoredConnection {
                 }
                 sutlist.add(curTrack);
             }
+            allTracks.add(curTrack);
             Runnable newTrackRunnable = update.getNewTrackRunnable();
             if (null != newTrackRunnable) {
                 newTrackRunnable.run();

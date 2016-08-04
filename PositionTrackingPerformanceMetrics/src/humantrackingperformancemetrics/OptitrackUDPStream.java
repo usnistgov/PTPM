@@ -1069,6 +1069,7 @@ public class OptitrackUDPStream extends MonitoredConnection {
                 }
                 sutlist.add(curTrack);
             }
+            allTracks.add(curTrack);
             Runnable newTrackRunnable = update.getNewTrackRunnable();
             if (null != newTrackRunnable) {
                 newTrackRunnable.run();
@@ -1131,7 +1132,12 @@ public class OptitrackUDPStream extends MonitoredConnection {
         last_frame_recieved.localRecvTime = time;
         lastLocalRecvTime = time;
         PrintStream optitrack_print_stream = update.getPrintStream();
-
+        
+        List<Track> allTracks = update.getAllTracks();
+        if (null == allTracks) {
+            allTracks = new ArrayList<Track>();
+            update.setAllTracks(allTracks);
+        }
         if (update.isAddNewFrameLines()) {
             try {
                 nanTrackPoint.time = time;
@@ -1170,6 +1176,7 @@ public class OptitrackUDPStream extends MonitoredConnection {
                             }
                             sutlist.add(optitrack_unaffiliated_track);
                         }
+                        allTracks.add(optitrack_unaffiliated_track);
                         update.setCurrentDeviceTracks(optitrack_tracks);
                     }
                     for (Point3D p3d : last_frame_recieved.other_markers_array) {

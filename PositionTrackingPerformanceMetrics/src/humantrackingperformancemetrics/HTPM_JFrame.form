@@ -272,14 +272,14 @@
             </MenuItem>
             <MenuItem class="javax.swing.JPopupMenu$Separator" name="jSeparator6">
             </MenuItem>
-            <Menu class="javax.swing.JMenu" name="jMenuRecentGroundTruthCsvToSpreadsheet">
+            <Menu class="javax.swing.JMenu" name="jMenuRecentGroundTruthCsvToExternal">
               <Properties>
-                <Property name="text" type="java.lang.String" value="Recent Ground Truth CSV To Spreadsheet"/>
+                <Property name="text" type="java.lang.String" value="Recent Ground Truth CSV To External Program"/>
               </Properties>
             </Menu>
-            <Menu class="javax.swing.JMenu" name="jMenuRecentSystemUnderTestCsvToSpreadsheet">
+            <Menu class="javax.swing.JMenu" name="jMenuRecentSystemUnderTestCsvToExternal">
               <Properties>
-                <Property name="text" type="java.lang.String" value="Recent System Under Test  CSV To Spreadsheet"/>
+                <Property name="text" type="java.lang.String" value="Recent System Under Test  CSV To External Program"/>
               </Properties>
             </Menu>
           </SubComponents>

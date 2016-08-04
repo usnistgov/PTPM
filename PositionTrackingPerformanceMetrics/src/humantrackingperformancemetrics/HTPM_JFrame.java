@@ -329,7 +329,7 @@ public class HTPM_JFrame extends javax.swing.JFrame {
                 if (!this.recent_gt_files.containsKey(o.filename)) {
                     this.recent_gt_files.put(o.filename, o);
                     this.jMenuRecentGroundTruthCsv.add(this.createRecentFileMenuItem(o, _is_groundtruth));
-                    this.jMenuRecentGroundTruthCsvToSpreadsheet.add(this.createRecentFileMenuItem(o, _is_groundtruth));
+                    this.jMenuRecentGroundTruthCsvToExternal.add(this.createRecentFileMenuItem(o, _is_groundtruth));
                 }
             } else {
                 if (null == this.recent_sut_files) {
@@ -337,7 +337,7 @@ public class HTPM_JFrame extends javax.swing.JFrame {
                 }
                 if (!this.recent_sut_files.containsKey(o.filename)) {
                     this.jMenuRecentSystemUnderTestCsv.add(this.createRecentFileMenuItem(o, _is_groundtruth));
-                    this.jMenuRecentSystemUnderTestCsvToSpreadsheet.add(this.createRecentFileToSpreadsheetMenuItem(o, _is_groundtruth));
+                    this.jMenuRecentSystemUnderTestCsvToExternal.add(this.createRecentFileToSpreadsheetMenuItem(o, _is_groundtruth));
                     this.recent_sut_files.put(o.filename, o);
                 }
             }
@@ -721,8 +721,8 @@ public class HTPM_JFrame extends javax.swing.JFrame {
         jMenuItemStartRecording = new javax.swing.JMenuItem();
         jMenuItemStopRecording = new javax.swing.JMenuItem();
         jSeparator6 = new javax.swing.JPopupMenu.Separator();
-        jMenuRecentGroundTruthCsvToSpreadsheet = new javax.swing.JMenu();
-        jMenuRecentSystemUnderTestCsvToSpreadsheet = new javax.swing.JMenu();
+        jMenuRecentGroundTruthCsvToExternal = new javax.swing.JMenu();
+        jMenuRecentSystemUnderTestCsvToExternal = new javax.swing.JMenu();
         jMenuConnections = new javax.swing.JMenu();
         jCheckBoxMenuItemOptitrackVicon = new javax.swing.JCheckBoxMenuItem();
         jCheckBoxMenuItemAcceptGT = new javax.swing.JCheckBoxMenuItem();
@@ -1224,11 +1224,11 @@ public class HTPM_JFrame extends javax.swing.JFrame {
         jMenu1.add(jMenuItemStopRecording);
         jMenu1.add(jSeparator6);
 
-        jMenuRecentGroundTruthCsvToSpreadsheet.setText("Recent Ground Truth CSV To Spreadsheet");
-        jMenu1.add(jMenuRecentGroundTruthCsvToSpreadsheet);
+        jMenuRecentGroundTruthCsvToExternal.setText("Recent Ground Truth CSV To External Program");
+        jMenu1.add(jMenuRecentGroundTruthCsvToExternal);
 
-        jMenuRecentSystemUnderTestCsvToSpreadsheet.setText("Recent System Under Test  CSV To Spreadsheet");
-        jMenu1.add(jMenuRecentSystemUnderTestCsvToSpreadsheet);
+        jMenuRecentSystemUnderTestCsvToExternal.setText("Recent System Under Test  CSV To External Program");
+        jMenu1.add(jMenuRecentSystemUnderTestCsvToExternal);
 
         jMenuBar1.add(jMenu1);
 
@@ -7705,10 +7705,10 @@ public class HTPM_JFrame extends javax.swing.JFrame {
     private javax.swing.JMenu jMenuMode;
     private javax.swing.JMenu jMenuPanAndZoom;
     private javax.swing.JMenu jMenuRecentGroundTruthCsv;
-    private javax.swing.JMenu jMenuRecentGroundTruthCsvToSpreadsheet;
+    private javax.swing.JMenu jMenuRecentGroundTruthCsvToExternal;
     private javax.swing.JMenu jMenuRecentMatchFiles;
     private javax.swing.JMenu jMenuRecentSystemUnderTestCsv;
-    private javax.swing.JMenu jMenuRecentSystemUnderTestCsvToSpreadsheet;
+    private javax.swing.JMenu jMenuRecentSystemUnderTestCsvToExternal;
     private javax.swing.JMenu jMenuView;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JRadioButton jRadioButtonMeasure;

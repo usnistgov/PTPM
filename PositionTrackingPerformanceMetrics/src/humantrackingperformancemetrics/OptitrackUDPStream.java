@@ -1115,7 +1115,7 @@ public class OptitrackUDPStream extends MonitoredConnection {
             update.getCsvLinePrinter()
                     .printOneLine(tp, curTrack.name, df.frameNumber, df.timeSinceLastRecvTime, df.timestamp, ps);
         }
-        if (curTrack.data.size() > 5000) {
+        while(curTrack.data.size() > 200) {
             curTrack.data.remove(0);
         }
         curTrack.cur_time_index = curTrack.data.size() - 1;

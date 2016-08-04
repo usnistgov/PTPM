@@ -4048,6 +4048,9 @@ public class HTPM_JFrame extends javax.swing.JFrame {
                 this.jCheckBoxMenuItemOptitrackVicon.setSelected(false);
                 return;
             }
+            if (options.isStartRecording()) {
+                startRecording();
+            }
 //            final String server = JOptionPane.showInputDialog(this, "Optitrack IP Address",
 //                    s.optitrack_host);
 //            optitrack_is_ground_truth
@@ -4100,11 +4103,6 @@ public class HTPM_JFrame extends javax.swing.JFrame {
                         }
                     });
                     break;
-            }
-            if (null != server) {
-                if (options.isStartRecording()) {
-                    startRecording();
-                }
             }
 
         } else {

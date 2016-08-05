@@ -400,6 +400,57 @@ public class DrawPanel extends JPanel {
             }
 
             if (!t.disconnected) {
+                
+                // Some paranoid checks added after it was getting
+                // hung in the drawLine function.
+                if(ipt.x < 0 && last_ipt.x < 0) {
+                    last_ipt = ipt;
+                    continue;
+                }
+                if(ipt.x > d.width && last_ipt.x > d.width) {
+                    last_ipt = ipt;
+                    continue;
+                }
+                if(ipt.y < 0 && last_ipt.y < 0) {
+                    last_ipt = ipt;
+                    continue;
+                }
+                if(ipt.y > d.height && last_ipt.y > d.height) {
+                    last_ipt = ipt;
+                    continue;
+                }
+                if(ipt.x < -20000) {
+                    last_ipt = ipt;
+                    continue;
+                }
+                if(last_ipt.x < -20000) {
+                    last_ipt = ipt;
+                    continue;
+                }
+                if(ipt.y < -20000) {
+                    last_ipt = ipt;
+                    continue;
+                }
+                if(last_ipt.y < -20000) {
+                    last_ipt = ipt;
+                    continue;
+                }
+                if(ipt.x > d.width +20000) {
+                    last_ipt = ipt;
+                    continue;
+                }
+                if(last_ipt.x > d.width + 20000) {
+                    last_ipt = ipt;
+                    continue;
+                }
+                if(ipt.y > d.height +20000) {
+                    last_ipt = ipt;
+                    continue;
+                }
+                if(last_ipt.y > d.height + 20000) {
+                    last_ipt = ipt;
+                    continue;
+                }
                 g.drawLine(ipt.x, ipt.y,
                         last_ipt.x, last_ipt.y);
             }
@@ -463,11 +514,13 @@ public class DrawPanel extends JPanel {
             boolean show_gray,
             boolean show_selected) {
         if (null != _tracks) {
+//            System.out.println("tracks.size() = " + tracks.size());
             for (int i = 0; i < tracks.size(); i++) {
                 Track t = tracks.get(i);
                 if (t.disconnected && !show_disconnected) {
                     continue;
                 }
+//                System.out.println("t.data.size() = " + t.data.size());
                 paintTrack(g, d, t, show_gray, show_selected);
             }
         }
@@ -513,6 +566,8 @@ public class DrawPanel extends JPanel {
     private double img_to_world_scale = 1.0;
     Dimension cur_dimension = this.getPreferredSize();
 
+    private double last_img_to_world_scale = -1;
+    
     public void update_img_to_world_scale(Dimension d) {
         this.cur_dimension = d;
         double x_scale = (x_max - x_min) / d.width;
@@ -521,7 +576,20 @@ public class DrawPanel extends JPanel {
         if (y_scale > x_scale) {
             this.img_to_world_scale = y_scale;
         }
-        //System.out.println("img_to_world_scale = " + img_to_world_scale);
+//        if(Math.abs(last_img_to_world_scale-img_to_world_scale) > 0.01 ||
+//               Math.abs(last_img_to_world_scale-img_to_world_scale)/(img_to_world_scale+1e-15) > 0.01||
+//               Math.abs(last_img_to_world_scale-img_to_world_scale)/(last_img_to_world_scale+1e-15) > 0.01) {
+//            System.out.println("img_to_world_scale = " + img_to_world_scale);
+//            System.out.println("d.width = " + d.width);
+//            System.out.println("d.height = " + d.height);
+//            System.out.println("x_max = " + x_max);
+//            System.out.println("x_min = " + x_min);
+//            System.out.println("y_max = " + y_max);
+//            System.out.println("y_min = " + y_min);
+//            System.out.println("x_scale = " + x_scale);
+//            System.out.println("y_scale = " + y_scale);
+//            last_img_to_world_scale = img_to_world_scale;
+//        }
     }
 
     public static enum coordType {

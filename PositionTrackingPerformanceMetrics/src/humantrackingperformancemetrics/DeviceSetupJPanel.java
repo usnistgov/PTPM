@@ -37,24 +37,39 @@ public class DeviceSetupJPanel extends javax.swing.JPanel {
         initComponents();
     }
 
-    private JDialog dialog=null;
+    private JDialog dialog = null;
     private DeviceSetupOptions options;
 
     public DeviceSetupOptions getOptions() {
         return options;
     }
 
-    private boolean cancelled; 
+    private boolean cancelled;
 
     public boolean isCancelled() {
         return cancelled;
     }
-    
-    static public DeviceSetupJPanel showDialog(Frame parent) {
+
+    static public DeviceSetupJPanel showDialog(Frame parent, DeviceTypeEnum devType) {
         DeviceSetupJPanel opanel = new DeviceSetupJPanel();
         JDialog dialog = new JDialog(parent, Dialog.ModalityType.APPLICATION_MODAL);
         opanel.setVisible(true);
         opanel.dialog = dialog;
+        if (null != devType) {
+            switch (devType) {
+                case VICON:
+                    opanel.jRadioButtonVicon.setSelected(true);
+                    opanel.jRadioButtonOptitrack.setSelected(false);
+                    break;
+
+                case OPTITRACK:
+                    opanel.jRadioButtonVicon.setSelected(false);
+                    opanel.jRadioButtonOptitrack.setSelected(true);
+                    break;
+            }
+            opanel.jRadioButtonVicon.setEnabled(false);
+            opanel.jRadioButtonOptitrack.setEnabled(false);
+        }
         dialog.add(opanel);
         dialog.pack();
         //dialog.setModal(Dialog.ModalityType.APPLICATION_MODAL);
@@ -64,23 +79,25 @@ public class DeviceSetupJPanel extends javax.swing.JPanel {
 
         //dialog.setBounds(transform_frame.getBounds());
         dialog.setVisible(true);
-        if(opanel.cancelled) {
+        if (opanel.cancelled) {
             opanel.options = null;
         } else {
-            DeviceTypeEnum devType = DeviceTypeEnum.OPTITRACK;
-            if(opanel.jRadioButtonVicon.isSelected()) {
-                devType = DeviceTypeEnum.VICON;
+            if (null == devType) {
+                devType = DeviceTypeEnum.OPTITRACK;
+                if (opanel.jRadioButtonVicon.isSelected()) {
+                    devType = DeviceTypeEnum.VICON;
+                }
             }
-            opanel.options = new DeviceSetupOptions(opanel.jTextFieldHost.getText(), 
-                        opanel.jTextFieldVersion.getText(), 
-                        opanel.jCheckBoxMulticast.isSelected(), 
-                        opanel.jCheckBoxGroundTruth.isSelected(), 
-                        opanel.jCheckBoxStartRecording.isSelected(),
-                        devType);
+            opanel.options = new DeviceSetupOptions(opanel.jTextFieldHost.getText(),
+                    opanel.jTextFieldVersion.getText(),
+                    opanel.jCheckBoxMulticast.isSelected(),
+                    opanel.jCheckBoxGroundTruth.isSelected(),
+                    opanel.jCheckBoxStartRecording.isSelected(),
+                    devType);
         }
         return opanel;
     }
-    
+
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always

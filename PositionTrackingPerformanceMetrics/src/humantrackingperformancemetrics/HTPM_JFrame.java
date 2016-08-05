@@ -724,7 +724,8 @@ public class HTPM_JFrame extends javax.swing.JFrame {
         jMenuRecentGroundTruthCsvToExternal = new javax.swing.JMenu();
         jMenuRecentSystemUnderTestCsvToExternal = new javax.swing.JMenu();
         jMenuConnections = new javax.swing.JMenu();
-        jCheckBoxMenuItemOptitrackVicon = new javax.swing.JCheckBoxMenuItem();
+        jCheckBoxMenuItemOptitrack = new javax.swing.JCheckBoxMenuItem();
+        jCheckBoxMenuItemVicon = new javax.swing.JCheckBoxMenuItem();
         jCheckBoxMenuItemAcceptGT = new javax.swing.JCheckBoxMenuItem();
         jCheckBoxMenuItemAcceptSutData = new javax.swing.JCheckBoxMenuItem();
         jMenuItemConnectGTServer = new javax.swing.JMenuItem();
@@ -865,11 +866,11 @@ public class HTPM_JFrame extends javax.swing.JFrame {
         jTree1.setModel(new javax.swing.tree.DefaultTreeModel(treeNode1));
         jTree1.setPreferredSize(new java.awt.Dimension(300, 66));
         jTree1.addTreeExpansionListener(new javax.swing.event.TreeExpansionListener() {
-            public void treeCollapsed(javax.swing.event.TreeExpansionEvent evt) {
-                jTree1TreeCollapsed(evt);
-            }
             public void treeExpanded(javax.swing.event.TreeExpansionEvent evt) {
                 jTree1TreeExpanded(evt);
+            }
+            public void treeCollapsed(javax.swing.event.TreeExpansionEvent evt) {
+                jTree1TreeCollapsed(evt);
             }
         });
         jTree1.addTreeSelectionListener(new javax.swing.event.TreeSelectionListener() {
@@ -1234,13 +1235,21 @@ public class HTPM_JFrame extends javax.swing.JFrame {
 
         jMenuConnections.setText("Connections");
 
-        jCheckBoxMenuItemOptitrackVicon.setText("Connect/Show Live Optitrack/Vicon Data");
-        jCheckBoxMenuItemOptitrackVicon.addActionListener(new java.awt.event.ActionListener() {
+        jCheckBoxMenuItemOptitrack.setText("Connect To Optitrack");
+        jCheckBoxMenuItemOptitrack.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jCheckBoxMenuItemOptitrackViconActionPerformed(evt);
+                jCheckBoxMenuItemOptitrackActionPerformed(evt);
             }
         });
-        jMenuConnections.add(jCheckBoxMenuItemOptitrackVicon);
+        jMenuConnections.add(jCheckBoxMenuItemOptitrack);
+
+        jCheckBoxMenuItemVicon.setText("Connect To Vicon");
+        jCheckBoxMenuItemVicon.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jCheckBoxMenuItemViconActionPerformed(evt);
+            }
+        });
+        jMenuConnections.add(jCheckBoxMenuItemVicon);
 
         jCheckBoxMenuItemAcceptGT.setText("Open Port to Accept GT data (2113)");
         jCheckBoxMenuItemAcceptGT.addActionListener(new java.awt.event.ActionListener() {
@@ -3577,7 +3586,7 @@ public class HTPM_JFrame extends javax.swing.JFrame {
         } catch (Exception ex) {
             ods.close();
             ods = null;
-            this.jCheckBoxMenuItemOptitrackVicon.setSelected(false);
+            this.jCheckBoxMenuItemOptitrack.setSelected(false);
             this.stopRecording();
             Logger.getLogger(HTPM_JFrame.class.getName()).log(Level.SEVERE, null, ex);
             myShowMessageDialog(this,
@@ -3724,7 +3733,7 @@ public class HTPM_JFrame extends javax.swing.JFrame {
         } catch (Exception ex) {
             viconStream.close();
             viconStream = null;
-            this.jCheckBoxMenuItemOptitrackVicon.setSelected(false);
+            this.jCheckBoxMenuItemOptitrack.setSelected(false);
             this.stopRecording();
             Logger.getLogger(HTPM_JFrame.class.getName()).log(Level.SEVERE, null, ex);
             myShowMessageDialog(this,
@@ -3959,6 +3968,10 @@ public class HTPM_JFrame extends javax.swing.JFrame {
             optitrack_print_stream.close();
             optitrack_print_stream = null;
         }
+        updateRecentFileInfo();
+    }
+
+    private void updateRecentFileInfo() {
         File f;
         while (gtRecordingFiles.size() > 0 && (f = gtRecordingFiles.remove(0)) != null) {
             try {
@@ -4032,77 +4045,30 @@ public class HTPM_JFrame extends javax.swing.JFrame {
         this.deviceSetupOptions = deviceSetupOptions;
     }
 
-    private void jCheckBoxMenuItemOptitrackViconActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jCheckBoxMenuItemOptitrackViconActionPerformed
+    private void jCheckBoxMenuItemOptitrackActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jCheckBoxMenuItemOptitrackActionPerformed
         if (ods != null) {
             ods.close();
             ods = null;
-            this.jCheckBoxRecording.setEnabled(false);
-            stopRecording();
+            if(null != optitrack_print_stream) {
+                optitrack_print_stream.close();
+                optitrack_print_stream = null;
+                updateRecentFileInfo();
+            }
         }
-        if (this.jCheckBoxMenuItemOptitrackVicon.isSelected()) {
+        if (this.jCheckBoxMenuItemOptitrack.isSelected()) {
 
-            DeviceSetupJPanel panel = DeviceSetupJPanel.showDialog(this);
+            DeviceSetupJPanel panel = DeviceSetupJPanel.showDialog(this, DeviceTypeEnum.OPTITRACK);
             DeviceSetupOptions options = panel.getOptions();
             this.deviceSetupOptions = options;
             if (panel.isCancelled() || options == null) {
-                this.jCheckBoxMenuItemOptitrackVicon.setSelected(false);
+                this.jCheckBoxMenuItemOptitrack.setSelected(false);
                 return;
             }
             if (options.isStartRecording()) {
                 startRecording();
             }
-//            final String server = JOptionPane.showInputDialog(this, "Optitrack IP Address",
-//                    s.optitrack_host);
-//            optitrack_is_ground_truth
-//                    = AskBoolean("Use Optitrack as Ground Truth?",
-//                            optitrack_is_ground_truth);
-            final String server = options.getHost();
-            switch (options.getDeviceType()) {
-                case OPTITRACK:
-                    optitrack_is_ground_truth = options.isGroundtruth();
-                    System.out.println("optitrack_is_ground_truth = "
-                            + optitrack_is_ground_truth);
-//            int multicast_response = JOptionPane.showConfirmDialog(this, "Use multicast?");
-//            if (options.isMulticast()) {
-//                this.jCheckBoxMenuItemOptitrack.setSelected(false);
-//                return;
-//            }
-                    this.jCheckBoxRecording.setEnabled(true);
-//            final String netNatStringVersion = JOptionPane.showInputDialog(this,"Optitrack NetNat Version","2.10");
-                    final String netNatStringVersion = options.getVersionString();
-                    int netNatMajor = 2;
-                    int netNatMinor = 6;
-                    int pindex = netNatStringVersion.indexOf('.');
-                    if (pindex > 0) {
-                        netNatMajor = Integer.parseInt(netNatStringVersion.substring(0, pindex));
-                        netNatMinor = Integer.parseInt(netNatStringVersion.substring(pindex + 1).trim());
-                    }
-                    if (null != server) {
-                        if (!this.ConnectToOptitrack(server, options.isMulticast(), netNatMajor, netNatMinor)) {
-                            return;
-                        }
-//                boolean start_recording = AskBoolean("Start recording live data?",
-//                        false);
-
-                    }
-                    break;
-
-                case VICON:
-                    viconStream = new ViconDataStream(server);
-                    viconStream.addListener(new Runnable() {
-                        int action_count = 0;
-
-                        @Override
-                        public void run() {
-                            if (action_count < 2) {
-                                s.optitrack_host = server;
-                                s.optitrack_trasform_filename = viconStream.getTransformFilename();
-                            }
-                            action_count++;
-                            updateViconData();
-                        }
-                    });
-                    break;
+            if (connectSpecialDevice(options)) {
+                return;
             }
 
         } else {
@@ -4112,7 +4078,7 @@ public class HTPM_JFrame extends javax.swing.JFrame {
                 this.ClearData();
             }
         }
-    }//GEN-LAST:event_jCheckBoxMenuItemOptitrackViconActionPerformed
+    }//GEN-LAST:event_jCheckBoxMenuItemOptitrackActionPerformed
 
     public static final TrackPoint nanTrackPoint = new TrackPoint(Double.NaN, Double.NaN, Double.NaN, Double.NaN, Double.NaN, Double.NaN);
 
@@ -4896,7 +4862,7 @@ public class HTPM_JFrame extends javax.swing.JFrame {
         }
         if (this.jCheckBoxMenuItemAcceptGT.isSelected()
                 || this.jCheckBoxMenuItemAcceptSutData.isSelected()
-                || this.jCheckBoxMenuItemOptitrackVicon.isSelected()) {
+                || this.jCheckBoxMenuItemOptitrack.isSelected()) {
             return true;
         }
         return false;
@@ -6128,6 +6094,96 @@ public class HTPM_JFrame extends javax.swing.JFrame {
         }
         CsvParseOptions.DEFAULT.transform = orig_transform;
     }//GEN-LAST:event_jMenuItemTransformFileSetActionPerformed
+
+    private void jCheckBoxMenuItemViconActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jCheckBoxMenuItemViconActionPerformed
+        if (viconStream != null) {
+            viconStream.close();
+            viconStream = null;
+            if (null != vicon_print_stream) {
+                vicon_print_stream.close();
+                vicon_print_stream = null;
+                updateRecentFileInfo();
+            }
+        }
+        if (this.jCheckBoxMenuItemVicon.isSelected()) {
+
+            DeviceSetupJPanel panel = DeviceSetupJPanel.showDialog(this, DeviceTypeEnum.VICON);
+            DeviceSetupOptions options = panel.getOptions();
+            this.deviceSetupOptions = options;
+            if (panel.isCancelled() || options == null) {
+                this.jCheckBoxMenuItemVicon.setSelected(false);
+                return;
+            }
+            if (options.isStartRecording()) {
+                startRecording();
+            }
+            if (connectSpecialDevice(options)) {
+                return;
+            }
+
+        } else {
+            boolean clear_old_data
+                    = AskBoolean("Clear old data?", false);
+            if (clear_old_data) {
+                this.ClearData();
+            }
+        }
+    }//GEN-LAST:event_jCheckBoxMenuItemViconActionPerformed
+
+    private boolean connectSpecialDevice(DeviceSetupOptions options) throws NumberFormatException {
+        //            final String server = JOptionPane.showInputDialog(this, "Optitrack IP Address",
+//                    s.optitrack_host);
+//            optitrack_is_ground_truth
+//                    = AskBoolean("Use Optitrack as Ground Truth?",
+//                            optitrack_is_ground_truth);
+        final String server = options.getHost();
+        switch (options.getDeviceType()) {
+            case OPTITRACK:
+                optitrack_is_ground_truth = options.isGroundtruth();
+                System.out.println("optitrack_is_ground_truth = "
+                        + optitrack_is_ground_truth);
+                //            int multicast_response = JOptionPane.showConfirmDialog(this, "Use multicast?");
+//            if (options.isMulticast()) {
+//                this.jCheckBoxMenuItemOptitrack.setSelected(false);
+//                return;
+//            }
+                this.jCheckBoxRecording.setEnabled(true);
+                //            final String netNatStringVersion = JOptionPane.showInputDialog(this,"Optitrack NetNat Version","2.10");
+                final String netNatStringVersion = options.getVersionString();
+                int netNatMajor = 2;
+                int netNatMinor = 6;
+                int pindex = netNatStringVersion.indexOf('.');
+                if (pindex > 0) {
+                    netNatMajor = Integer.parseInt(netNatStringVersion.substring(0, pindex));
+                    netNatMinor = Integer.parseInt(netNatStringVersion.substring(pindex + 1).trim());
+                }
+                if (null != server) {
+                    if (!this.ConnectToOptitrack(server, options.isMulticast(), netNatMajor, netNatMinor)) {
+                        return true;
+                    }
+//                boolean start_recording = AskBoolean("Start recording live data?",
+//                        false);
+                }
+                break;
+            case VICON:
+                viconStream = new ViconDataStream(server);
+                viconStream.addListener(new Runnable() {
+                    int action_count = 0;
+
+                    @Override
+                    public void run() {
+                        if (action_count < 2) {
+                            s.optitrack_host = server;
+                            s.optitrack_trasform_filename = viconStream.getTransformFilename();
+                        }
+                        action_count++;
+                        updateViconData();
+                    }
+                });
+                break;
+        }
+        return false;
+    }
 
     static public class GlobalStats {
 
@@ -7631,7 +7687,7 @@ public class HTPM_JFrame extends javax.swing.JFrame {
     private javax.swing.JCheckBoxMenuItem jCheckBoxMenuItemGrayTracks;
     private javax.swing.JCheckBoxMenuItem jCheckBoxMenuItemGtOnTop;
     private javax.swing.JCheckBoxMenuItem jCheckBoxMenuItemIgnoreSUTVelocities;
-    private javax.swing.JCheckBoxMenuItem jCheckBoxMenuItemOptitrackVicon;
+    private javax.swing.JCheckBoxMenuItem jCheckBoxMenuItemOptitrack;
     private javax.swing.JCheckBoxMenuItem jCheckBoxMenuItemPlay;
     private javax.swing.JCheckBoxMenuItem jCheckBoxMenuItemPlayAndMakeMovie;
     private javax.swing.JCheckBoxMenuItem jCheckBoxMenuItemPromptForTransforms;
@@ -7644,6 +7700,7 @@ public class HTPM_JFrame extends javax.swing.JFrame {
     private javax.swing.JCheckBoxMenuItem jCheckBoxMenuItemShowLabels;
     private javax.swing.JCheckBoxMenuItem jCheckBoxMenuItemShowOnlySelected;
     private javax.swing.JCheckBoxMenuItem jCheckBoxMenuItemUnaffiliatedMarkers;
+    private javax.swing.JCheckBoxMenuItem jCheckBoxMenuItemVicon;
     private javax.swing.JCheckBox jCheckBoxRecording;
     private javax.swing.JDialog jDialog1;
     private javax.swing.JLabel jLabel2;

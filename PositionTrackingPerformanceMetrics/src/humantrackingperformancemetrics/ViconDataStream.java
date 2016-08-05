@@ -60,10 +60,10 @@ public class ViconDataStream extends MonitoredConnection {
             while (!Thread.currentThread().isInterrupted()) {
                 List<TrackPoint> frameList = new ArrayList<>();
                 List<TrackPoint> unlabledFrameList = null;
-                if(this.logUnlabeled) {
+                if (this.logUnlabeled) {
                     unlabledFrameList = new ArrayList<>();
                 }
-                
+
                 client.getFrame();
                 long frameNumber = client.getFrameNumber();
                 if (frameNumber == lastFrameNumber) {
@@ -72,9 +72,9 @@ public class ViconDataStream extends MonitoredConnection {
                 }
                 long diff = frameNumber - lastFrameNumber;
                 if (lastFrameNumber > 0 && diff > 1) {
-                    System.out.println("frameNumber = " + frameNumber);
-                    System.out.println("lastFrameNumber = " + lastFrameNumber);
-                    System.out.println("diff = " + diff);
+//                    System.out.println("frameNumber = " + frameNumber);
+//                    System.out.println("lastFrameNumber = " + lastFrameNumber);
+//                    System.out.println("diff = " + diff);
                     setMissedFrames(getMissedFrames() + (diff - 1));
                 }
                 lastFrameNumber = frameNumber;
@@ -90,7 +90,7 @@ public class ViconDataStream extends MonitoredConnection {
                         }
                         double trans3[] = client.getSegmentGlobalTranslation(subjectName, segmentName);
                         double quat4[] = client.getSegmentGlobalRotationQuaternion(subjectName, segmentName);
-                        TrackPoint tp = new TrackPoint(trans3[0], trans3[1], trans3[2], 0, 0, 0);
+                        TrackPoint tp = new TrackPoint(trans3[0] * 1.0e-3, trans3[1] * 1.0e-3, trans3[2] * 1.0e-3, 0, 0, 0);
                         tp.setLatency(latency);
                         tp.source = "Vicon_" + host;
                         if (!subjectName.equals(segmentName)) {
@@ -113,7 +113,7 @@ public class ViconDataStream extends MonitoredConnection {
 //                        System.out.println("unlabeledMarkerIndex = " + unlabeledMarkerIndex);
                             double markerTranslation[] = client.getUnlabeledMarkerGlobalTranslation(unlabeledMarkerIndex);
 //                        System.out.println("markerTranslation = " + Arrays.toString(markerTranslation));
-                            TrackPoint tp = new TrackPoint(markerTranslation[0], markerTranslation[1], markerTranslation[2], 0, 0, 0);
+                            TrackPoint tp = new TrackPoint(markerTranslation[0] * 1.0e-3, markerTranslation[1] * 1.0e-3, markerTranslation[2] * 1.0e-3, 0, 0, 0);
                             tp.setLatency(latency);
                             tp.source = "Vicon_" + host;
                             tp.name = "unlabeledMarker" + unlabeledMarkerIndex;
@@ -206,6 +206,7 @@ public class ViconDataStream extends MonitoredConnection {
                         unaffiliated_track.name = "vicon_unaffiliated_track";
                         unaffiliated_track.source = "Vicon_" + host;
                         unaffiliated_track.disconnected = true;
+                        unaffiliated_track.is_groundtruth = isGroundtruth();
                         List<Track> curDeviceTracks = update.getCurrentDeviceTracks();
                         if (null == curDeviceTracks) {
                             curDeviceTracks = new LinkedList<Track>();
@@ -219,7 +220,7 @@ public class ViconDataStream extends MonitoredConnection {
                             }
                             gtlist.add(unaffiliated_track);
                         } else {
-                            List<Track> sutlist = update.getGtlist();
+                            List<Track> sutlist = update.getSutlist();
                             if (null == sutlist) {
                                 sutlist = new LinkedList<Track>();
                                 update.setSutlist(sutlist);
@@ -335,7 +336,7 @@ public class ViconDataStream extends MonitoredConnection {
                 }
                 gtlist.add(curTrack);
             } else {
-                List<Track> sutlist = update.getGtlist();
+                List<Track> sutlist = update.getSutlist();
                 if (null == sutlist) {
                     sutlist = new ArrayList<Track>();
                     update.setSutlist(sutlist);
@@ -372,8 +373,14 @@ public class ViconDataStream extends MonitoredConnection {
         curTrack.selected = true;
 
         curTrack.currentPoint = tp;
-        curTrack.pointColor = Color.RED;
-        curTrack.lineColor = Color.RED;
+        if (isGroundtruth()) {
+            curTrack.pointColor = Color.RED;
+            curTrack.lineColor = Color.RED;
+        } else {
+            curTrack.pointColor = Color.BLUE;
+            curTrack.lineColor = Color.BLUE;
+        }
+
         if (null == curTrack.data) {
             curTrack.data = new ArrayList<>();
         }

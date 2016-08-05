@@ -753,7 +753,7 @@ public class OptitrackUDPStream extends MonitoredConnection {
             offset += 4;
             df.timestamp = (double) fTemp;
         }
-        if (true) {
+        if (debug) {
             System.out.println("df.timestamp = " + df.timestamp);
         }
         // frame params
@@ -776,7 +776,7 @@ public class OptitrackUDPStream extends MonitoredConnection {
             System.out.println("df.eod = " + df.eod);
         }
         offset += 4;
-        if (true) {
+        if (debug) {
             System.out.println("offset at end of data unpackFrameData = " + offset + ", nDataBytes=" + nDataBytes + ",data.length=" + data.length);
             System.out.println("");
             System.out.println("");
@@ -1002,6 +1002,7 @@ public class OptitrackUDPStream extends MonitoredConnection {
     private int updates = 0;
     private double firstUpdateTime = 0.0;
     private double lastLocalRecvTime = 0.0;
+    private int lastFrameNumber = -1;
     private static final Point2D zero2d = new Point2D.Float(0f, 0f);
 
     /**
@@ -1062,7 +1063,7 @@ public class OptitrackUDPStream extends MonitoredConnection {
                 }
                 gtlist.add(curTrack);
             } else {
-                List<Track> sutlist = update.getGtlist();
+                List<Track> sutlist = update.getSutlist();
                 if (null == sutlist) {
                     sutlist = new ArrayList<Track>();
                     update.setSutlist(sutlist);
@@ -1105,8 +1106,13 @@ public class OptitrackUDPStream extends MonitoredConnection {
         curTrack.selected = true;
 
         curTrack.currentPoint = tp;
-        curTrack.pointColor = Color.RED;
-        curTrack.lineColor = Color.RED;
+        if (isGroundtruth()) {
+            curTrack.pointColor = Color.RED;
+            curTrack.lineColor = Color.RED;
+        } else {
+            curTrack.pointColor = Color.BLUE;
+            curTrack.lineColor = Color.BLUE;
+        }
         if (null == curTrack.data) {
             curTrack.data = new ArrayList<TrackPoint>();
         }
@@ -1131,6 +1137,11 @@ public class OptitrackUDPStream extends MonitoredConnection {
         last_frame_recieved.timeSinceLastRecvTime = time - lastLocalRecvTime;
         last_frame_recieved.localRecvTime = time;
         lastLocalRecvTime = time;
+        int diff = last_frame_recieved.frameNumber - lastFrameNumber;
+        if(lastFrameNumber > 0 && diff > 2) {
+            setMissedFrames(getMissedFrames()+(diff-1));
+        }
+        lastFrameNumber = last_frame_recieved.frameNumber;
         PrintStream optitrack_print_stream = update.getPrintStream();
         
         List<Track> allTracks = update.getAllTracks();
@@ -1156,6 +1167,7 @@ public class OptitrackUDPStream extends MonitoredConnection {
                         optitrack_unaffiliated_track.name = "optitrack_unaffiliated_track";
                         optitrack_unaffiliated_track.source = "optitrack";
                         optitrack_unaffiliated_track.disconnected = true;
+                        optitrack_unaffiliated_track.is_groundtruth = isGroundtruth();
                         List<Track> optitrack_tracks = update.getCurrentDeviceTracks();
                         if (null == optitrack_tracks) {
                             optitrack_tracks = new LinkedList<Track>();
@@ -1169,7 +1181,7 @@ public class OptitrackUDPStream extends MonitoredConnection {
                             }
                             gtlist.add(optitrack_unaffiliated_track);
                         } else {
-                            List<Track> sutlist = update.getGtlist();
+                            List<Track> sutlist = update.getSutlist();
                             if (null == sutlist) {
                                 sutlist = new LinkedList<Track>();
                                 update.setSutlist(sutlist);

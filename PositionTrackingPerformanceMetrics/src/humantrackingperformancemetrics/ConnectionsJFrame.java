@@ -42,6 +42,7 @@ public class ConnectionsJFrame extends javax.swing.JFrame {
         jButtonEditTransform = new javax.swing.JButton();
         jLabel4 = new javax.swing.JLabel();
         jTextFieldMissedFrames = new javax.swing.JTextField();
+        jButtonReset = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setTitle("Connections ...");
@@ -115,6 +116,13 @@ public class ConnectionsJFrame extends javax.swing.JFrame {
 
         jTextFieldMissedFrames.setText("0");
 
+        jButtonReset.setText("Reset");
+        jButtonReset.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButtonResetActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
@@ -137,20 +145,21 @@ public class ConnectionsJFrame extends javax.swing.JFrame {
                         .addComponent(jLabel3)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(jTextFieldUpdates))
-                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                        .addGroup(layout.createSequentialGroup()
-                            .addComponent(jLabel4)
-                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                            .addComponent(jTextFieldMissedFrames))
-                        .addGroup(layout.createSequentialGroup()
-                            .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                .addComponent(jButtonConnectionDisconnect, javax.swing.GroupLayout.PREFERRED_SIZE, 181, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addComponent(jCheckBoxMonitorConnection)
-                                .addGroup(layout.createSequentialGroup()
-                                    .addComponent(jCheckBoxApplyTransform)
-                                    .addGap(69, 69, 69)
-                                    .addComponent(jButtonEditTransform)))
-                            .addGap(0, 0, Short.MAX_VALUE))))
+                    .addGroup(layout.createSequentialGroup()
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(layout.createSequentialGroup()
+                                .addComponent(jLabel4)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(jTextFieldMissedFrames, javax.swing.GroupLayout.PREFERRED_SIZE, 113, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(jButtonReset))
+                            .addComponent(jButtonConnectionDisconnect, javax.swing.GroupLayout.PREFERRED_SIZE, 181, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(jCheckBoxMonitorConnection)
+                            .addGroup(layout.createSequentialGroup()
+                                .addComponent(jCheckBoxApplyTransform)
+                                .addGap(69, 69, 69)
+                                .addComponent(jButtonEditTransform)))
+                        .addGap(0, 0, Short.MAX_VALUE)))
                 .addContainerGap())
         );
         layout.setVerticalGroup(
@@ -180,7 +189,8 @@ public class ConnectionsJFrame extends javax.swing.JFrame {
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                             .addComponent(jLabel4)
-                            .addComponent(jTextFieldMissedFrames, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addComponent(jTextFieldMissedFrames, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(jButtonReset))
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                             .addComponent(jCheckBoxApplyTransform)
@@ -281,6 +291,15 @@ public class ConnectionsJFrame extends javax.swing.JFrame {
         TransformMatrixJPanel.showDialog(this, selected_client);
         this.jCheckBoxApplyTransform.setSelected(selected_client.isApplyTransform());
     }//GEN-LAST:event_jButtonEditTransformActionPerformed
+
+    private void jButtonResetActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonResetActionPerformed
+        MonitoredConnection selected_client = this.getSelectedClient();
+        if(null == selected_client) {
+            return;
+        }
+        selected_client.setMissedFrames(0);
+        selected_client.resetUpdates();
+    }//GEN-LAST:event_jButtonResetActionPerformed
     public HTPM_JFrame main_frame = null;
     
     public MonitoredConnection getSelectedClient() {
@@ -361,6 +380,7 @@ public class ConnectionsJFrame extends javax.swing.JFrame {
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton jButtonConnectionDisconnect;
     private javax.swing.JButton jButtonEditTransform;
+    private javax.swing.JButton jButtonReset;
     private javax.swing.JCheckBox jCheckBoxApplyTransform;
     private javax.swing.JCheckBox jCheckBoxMonitorConnection;
     private javax.swing.JCheckBox jCheckBoxUseTimeRecvd;

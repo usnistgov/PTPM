@@ -3993,6 +3993,7 @@ public class HTPM_JFrame extends javax.swing.JFrame {
     public boolean ConnectToOptitrack(final String server, final boolean use_multicast, int major, int minor) {
         ods = new OptitrackUDPStream(server, use_multicast, major, minor);
         ods.setTransformFilename(s.optitrack_trasform_filename);
+        ods.setGroundtruth(optitrack_is_ground_truth);
         if (this.jCheckBoxMenuItemPromptForTransforms.isSelected()) {
             TransformMatrixJPanel.showDialog(this, ods);
         }
@@ -6167,6 +6168,7 @@ public class HTPM_JFrame extends javax.swing.JFrame {
                 break;
             case VICON:
                 viconStream = new ViconDataStream(server);
+                viconStream.setGroundtruth(options.isGroundtruth());
                 viconStream.addListener(new Runnable() {
                     int action_count = 0;
 

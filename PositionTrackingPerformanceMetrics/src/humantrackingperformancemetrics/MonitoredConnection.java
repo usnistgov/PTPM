@@ -41,7 +41,7 @@ public class MonitoredConnection implements Runnable, ConnectionInterface {
     volatile private int alert_pending_count = 0;
     private HTPM_JFrame htpm_jframe = null;
     private double transform[];
-    private boolean applyTransform=false;
+    private boolean applyTransform = false;
     private String transformFilename;
 
     public MonitoredConnection(final HTPM_JFrame _htpm_jframe) {
@@ -52,7 +52,7 @@ public class MonitoredConnection implements Runnable, ConnectionInterface {
     public MonitoredConnection() {
         init();
     }
-    
+
     private void init() {
         if (null == htpm_jframe) {
             this.htpm_jframe = HTPM_JFrame.main_frame;
@@ -88,7 +88,7 @@ public class MonitoredConnection implements Runnable, ConnectionInterface {
             monitor_timer.purge();
             monitor_timer = null;
         }
-        if (!monitorConnection 
+        if (!monitorConnection
                 || (null != htpm_jframe && this == htpm_jframe.default_client)) {
             return;
         }
@@ -142,8 +142,8 @@ public class MonitoredConnection implements Runnable, ConnectionInterface {
             }
         };
         monitor_timer = new java.util.Timer();
-        monitor_timer.schedule(monitor_timer_task, 
-                this.monitor_period, 
+        monitor_timer.schedule(monitor_timer_task,
+                this.monitor_period,
                 this.monitor_period);
     }
 
@@ -163,6 +163,10 @@ public class MonitoredConnection implements Runnable, ConnectionInterface {
         return source;
     }
 
+    public void resetUpdates() {
+        updates = 0;
+    }
+
     public void incUpdates() {
         updates++;
         final MonitoredConnection c = this;
@@ -178,7 +182,7 @@ public class MonitoredConnection implements Runnable, ConnectionInterface {
         }
     }
 
-        private long missedFrames = 0;
+    private long missedFrames = 0;
 
     /**
      * Get the value of missedFrames
@@ -199,7 +203,7 @@ public class MonitoredConnection implements Runnable, ConnectionInterface {
     }
 
     private double TIME_SCALE = 1.0;
-    
+
     @Override
     public void run() {
         String line = "";
@@ -208,21 +212,21 @@ public class MonitoredConnection implements Runnable, ConnectionInterface {
             InputStream is = socket.getInputStream();
             BufferedReader br = new BufferedReader(new InputStreamReader(is));
             int skips = 0;
-            int line_num=1;
+            int line_num = 1;
             while ((line = br.readLine()) != null && !t.isInterrupted() && !closed) {
                 line_num++;
                 double time_recvd = System.currentTimeMillis() / 1000.0;
                 incUpdates();
                 line = line.trim();
-                if(line.length() < 0) {
+                if (line.length() < 0) {
                     continue;
                 }
                 if (line.startsWith("source=")) {
                     this.source = line.substring(7);
                     continue;
                 }
-                if(!Character.isDigit(line.charAt(0)) &&
-                        line.charAt(0) != '.') {
+                if (!Character.isDigit(line.charAt(0))
+                        && line.charAt(0) != '.') {
                     continue;
                 }
                 TrackPoint tp = HTPM_JFrame.parseTrackPointLine(line,
@@ -230,43 +234,43 @@ public class MonitoredConnection implements Runnable, ConnectionInterface {
                 if (this.useTimeRecieved) {
                     tp.time = time_recvd;
                 }
-                if(this.applyTransform) {
+                if (this.applyTransform) {
                     tp.applyTransform(transform);
                 }
 
                 if (groundtruth) {
-                    HTPM_JFrame.AddTrackPointToTracks(htpm_jframe.getTracks(), 
+                    HTPM_JFrame.AddTrackPointToTracks(htpm_jframe.getTracks(),
                             tp, true, source, Color.red,
-                            htpm_jframe.live,line_num,
+                            htpm_jframe.live, line_num,
                             (line.split(CsvParseOptions.DEFAULT.delim).length > CsvParseOptions.DEFAULT.VX_INDEX),
                             CsvParseOptions.DEFAULT);
                 } else {
-                    HTPM_JFrame.AddTrackPointToTracks(htpm_jframe.getTracks(), 
-                            tp, false, source, Color.blue, 
-                            htpm_jframe.live,line_num,
+                    HTPM_JFrame.AddTrackPointToTracks(htpm_jframe.getTracks(),
+                            tp, false, source, Color.blue,
+                            htpm_jframe.live, line_num,
                             (line.split(CsvParseOptions.DEFAULT.delim).length > CsvParseOptions.DEFAULT.VX_INDEX),
                             CsvParseOptions.DEFAULT);
                 }
-                HTPM_JFrame.inner_min_time = Math.max(HTPM_JFrame.gt_min_time, 
+                HTPM_JFrame.inner_min_time = Math.max(HTPM_JFrame.gt_min_time,
                         HTPM_JFrame.sut_min_time);
-                HTPM_JFrame.inner_max_time = Math.min(HTPM_JFrame.gt_max_time, 
+                HTPM_JFrame.inner_max_time = Math.min(HTPM_JFrame.gt_max_time,
                         HTPM_JFrame.sut_max_time);
-                HTPM_JFrame.outer_min_time = Math.min(HTPM_JFrame.gt_min_time, 
+                HTPM_JFrame.outer_min_time = Math.min(HTPM_JFrame.gt_min_time,
                         HTPM_JFrame.sut_min_time);
-                HTPM_JFrame.outer_max_time = Math.max(HTPM_JFrame.gt_max_time, 
+                HTPM_JFrame.outer_max_time = Math.max(HTPM_JFrame.gt_max_time,
                         HTPM_JFrame.sut_max_time);
-                if (HTPM_JFrame.gt_min_time >= HTPM_JFrame.gt_max_time 
+                if (HTPM_JFrame.gt_min_time >= HTPM_JFrame.gt_max_time
                         || HTPM_JFrame.sut_min_time >= HTPM_JFrame.sut_max_time) {
-                    HTPM_JFrame.inner_min_time = 
-                            HTPM_JFrame.outer_min_time;
-                    HTPM_JFrame.inner_max_time = 
-                            HTPM_JFrame.outer_max_time;
+                    HTPM_JFrame.inner_min_time
+                            = HTPM_JFrame.outer_min_time;
+                    HTPM_JFrame.inner_max_time
+                            = HTPM_JFrame.outer_max_time;
                 }
-                if(is.available() < 1 || skips > 10) {
-                    if(htpm_jframe.live) {
+                if (is.available() < 1 || skips > 10) {
+                    if (htpm_jframe.live) {
                         htpm_jframe.panelRepaint();
                     }
-                    skips=0;
+                    skips = 0;
                 } else {
                     skips++;
                 }
@@ -338,7 +342,6 @@ public class MonitoredConnection implements Runnable, ConnectionInterface {
         ;
     }
 
-
     /**
      * @return the updates
      */
@@ -352,7 +355,6 @@ public class MonitoredConnection implements Runnable, ConnectionInterface {
     public HTPM_JFrame getHtpm_jframe() {
         return htpm_jframe;
     }
-
 
     /**
      * @return the TIME_SCALE
@@ -496,8 +498,8 @@ public class MonitoredConnection implements Runnable, ConnectionInterface {
     }
 
     protected List<Runnable> listeners = null;
-    
-   /**
+
+    /**
      * Add a listener that will be called whenever a data frame is received.
      *
      * @param r listener to add

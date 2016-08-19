@@ -36,8 +36,7 @@ import javax.swing.JPanel;
  */
 public class DrawPanel extends JPanel {
 
-    
-        private String label;
+    private String label;
 
     /**
      * Get the value of label
@@ -69,7 +68,7 @@ public class DrawPanel extends JPanel {
         super.paintComponent(g);
         Dimension d = this.getPreferredSize();
         paintData(g, d, this.use_sub_images_for_background);
-        if(null != label) {
+        if (null != label) {
             g.drawString(label, 20, 20);
         }
     }
@@ -107,8 +106,8 @@ public class DrawPanel extends JPanel {
         return op.filter(img_in, null);
     }
 //    public BufferedImage backgroundImageColor = getResourceImage("/htpm_resources/ISAT_Overhead.bmp");
- //   public BufferedImage backgroundImageGray = toGray(backgroundImageColor);
-  //  public BufferedImage backgroundImage = backgroundImageColor;
+    //   public BufferedImage backgroundImageGray = toGray(backgroundImageColor);
+    //  public BufferedImage backgroundImage = backgroundImageColor;
 //    public BufferedImage subBackgroundImage = backgroundImage;
 //    public int scaled_bg_width = backgroundImage.getWidth();
 //    public int scaled_bg_height = backgroundImage.getHeight();
@@ -273,7 +272,7 @@ public class DrawPanel extends JPanel {
     private double track_tail_highlight_time = 1.0;
 
     static public Color overrideLineColor = null;
-    
+
     /**
      * Paint one track( the set of points associated with one
      * trackable,reciever, or person)
@@ -332,12 +331,12 @@ public class DrawPanel extends JPanel {
                     TrackPoint last_pt = t.data.get(t.cur_time_index);
                     if (null != last_pt) {
                         Point last_ipt = this.world2ImgPoint(last_pt);
-                        if(null != DrawPanel.overrideLineColor) {
+                        if (null != DrawPanel.overrideLineColor) {
                             g.setColor(DrawPanel.overrideLineColor);
                         } else if (t.lineColor != null && t.lineColor != t.pointColor) {
                             g.setColor(t.lineColor);
                         }
-                        
+
                         g.drawLine(ipt.x, ipt.y,
                                 last_ipt.x, last_ipt.y);
                     }
@@ -349,10 +348,8 @@ public class DrawPanel extends JPanel {
             }
             if (use_gray_tracks) {
                 g.setColor(Color.lightGray);
-            } else {
-                if (null != t.pointColor) {
-                    g.setColor(t.pointColor);
-                }
+            } else if (null != t.pointColor) {
+                g.setColor(t.pointColor);
             }
         }
         TrackPoint pt = t.data.get(0);
@@ -380,17 +377,15 @@ public class DrawPanel extends JPanel {
                 }
                 if (use_gray_tracks) {
                     g.setColor(Color.lightGray);
-                } else {
-                    if (null != t.pointColor) {
-                        g.setColor(t.pointColor);
-                    }
+                } else if (null != t.pointColor) {
+                    g.setColor(t.pointColor);
                 }
             }
             if ((ipt.x == last_ipt.x && ipt.y == last_ipt.y)
                     || t.disconnected) {
                 g.fillRect(ipt.x - this.TrackPointSize / 2, ipt.y - this.TrackPointSize / 2, this.TrackPointSize, this.TrackPointSize);
             }
-            if(DrawPanel.overrideLineColor != null) {
+            if (DrawPanel.overrideLineColor != null) {
                 g.setColor(DrawPanel.overrideLineColor);
             } else if (use_gray_tracks) {
                 g.setColor(Color.lightGray);
@@ -399,54 +394,54 @@ public class DrawPanel extends JPanel {
             }
 
             if (!t.disconnected) {
-                
+
                 // Some paranoid checks added after it was getting
                 // hung in the drawLine function.
-                if(ipt.x < 0 && last_ipt.x < 0) {
+                if (ipt.x < 0 && last_ipt.x < 0) {
                     last_ipt = ipt;
                     continue;
                 }
-                if(ipt.x > d.width && last_ipt.x > d.width) {
+                if (ipt.x > d.width && last_ipt.x > d.width) {
                     last_ipt = ipt;
                     continue;
                 }
-                if(ipt.y < 0 && last_ipt.y < 0) {
+                if (ipt.y < 0 && last_ipt.y < 0) {
                     last_ipt = ipt;
                     continue;
                 }
-                if(ipt.y > d.height && last_ipt.y > d.height) {
+                if (ipt.y > d.height && last_ipt.y > d.height) {
                     last_ipt = ipt;
                     continue;
                 }
-                if(ipt.x < -20000) {
+                if (ipt.x < -20000) {
                     last_ipt = ipt;
                     continue;
                 }
-                if(last_ipt.x < -20000) {
+                if (last_ipt.x < -20000) {
                     last_ipt = ipt;
                     continue;
                 }
-                if(ipt.y < -20000) {
+                if (ipt.y < -20000) {
                     last_ipt = ipt;
                     continue;
                 }
-                if(last_ipt.y < -20000) {
+                if (last_ipt.y < -20000) {
                     last_ipt = ipt;
                     continue;
                 }
-                if(ipt.x > d.width +20000) {
+                if (ipt.x > d.width + 20000) {
                     last_ipt = ipt;
                     continue;
                 }
-                if(last_ipt.x > d.width + 20000) {
+                if (last_ipt.x > d.width + 20000) {
                     last_ipt = ipt;
                     continue;
                 }
-                if(ipt.y > d.height +20000) {
+                if (ipt.y > d.height + 20000) {
                     last_ipt = ipt;
                     continue;
                 }
-                if(last_ipt.y > d.height + 20000) {
+                if (last_ipt.y > d.height + 20000) {
                     last_ipt = ipt;
                     continue;
                 }
@@ -566,7 +561,7 @@ public class DrawPanel extends JPanel {
     Dimension cur_dimension = this.getPreferredSize();
 
     private double last_img_to_world_scale = -1;
-    
+
     public void update_img_to_world_scale(Dimension d) {
         this.cur_dimension = d;
         double x_scale = (x_max - x_min) / d.width;
@@ -1182,31 +1177,49 @@ public class DrawPanel extends JPanel {
                 continue;
             }
             TrackPoint pt = t.data.get(0);
-            int pix_x = (int) ((pt.x - x_min) / scale);
-            int pix_y = (int) ((pt.y - y_min) / scale);
-            g.drawString("Start(" + t.toString() + String.format(")={%.2f,%.2f})",
-                    pt.x,
-                    pt.y),
-                    pix_x,
-                    d.height - pix_y);
-            pt = t.currentPoint;
-            if (null != pt) {
-                pix_x = (int) ((pt.x - x_min) / scale);
-                pix_y = (int) ((pt.y - y_min) / scale);
-                g.drawString("Current(" + t.toString() + String.format(")={%.2f,%.2f})",
-                        pt.x,
-                        pt.y),
+            double x = (this.displayCoordType == coordType.ZY) ? pt.z : pt.x;
+            double y = (this.displayCoordType == coordType.XZ) ? -pt.z : pt.y;
+            int pix_x = (int) ((x - x_min) / scale);
+            int pix_y = (int) ((y - y_min) / scale);
+            int current_pix_x = pix_x;
+            int current_pix_y = pix_y;
+            if (null != t.currentPoint) {
+                double current_x = (this.displayCoordType == coordType.ZY) ? t.currentPoint.z : t.currentPoint.x;
+                double current_y = (this.displayCoordType == coordType.XZ) ? -t.currentPoint.z : t.currentPoint.y;
+                current_pix_x = (int) ((current_x - x_min) / scale);
+                current_pix_y = (int) ((current_y - y_min) / scale);
+                g.drawString("Current(" + t.toString()
+                        + String.format(")={%.2f,%.2f,%.2f})",
+                                t.currentPoint.x,
+                                t.currentPoint.y,
+                                t.currentPoint.z),
+                        current_pix_x,
+                        d.height - current_pix_y);
+            }
+            if (null == t.currentPoint || Math.abs(current_pix_x - pix_x) + Math.abs(current_pix_y - pix_y) > 50) {
+                g.drawString("Start(" + t.toString()
+                        + String.format(")={%.2f,%.2f,%.2f})",
+                                pt.x,
+                                pt.y,
+                                pt.z),
                         pix_x,
                         d.height - pix_y);
             }
             pt = t.data.get(t.data.size() - 1);
-            pix_x = (int) ((pt.x - x_min) / scale);
-            pix_y = (int) ((pt.y - y_min) / scale);
-            g.drawString("End(" + t.toString() + String.format(")={%.2f,%.2f})",
-                    pt.x,
-                    pt.y),
-                    pix_x,
-                    d.height - pix_y);
+            double end_x = (this.displayCoordType == coordType.ZY) ? pt.z : pt.x;
+            double end_y = (this.displayCoordType == coordType.XZ) ? -pt.z : pt.y;
+            int end_pix_x = (int) ((end_x - x_min) / scale);
+            int end_pix_y = (int) ((end_y - y_min) / scale);
+            if (Math.abs(current_pix_x - end_pix_x) + Math.abs(current_pix_y - end_pix_y) > 50) {
+                if (Math.abs(pix_x - end_pix_x) + Math.abs(pix_y - end_pix_y) > 50) {
+                    g.drawString("End(" + t.toString() + String.format(")={%.2f,%.2f,%.2f})",
+                            pt.x,
+                            pt.y,
+                            pt.z),
+                            end_pix_x,
+                            d.height - end_pix_y);
+                }
+            }
         }
     }
 

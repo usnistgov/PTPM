@@ -42,31 +42,46 @@ public class CsvLinePrinter implements CsvLinePrinterInterface {
         //<timestamp>, <person ID>, <person centroid X>, <person centroid Y>, <person centroid Z>,<bounding box top center X>, <bounding box top center Y>,  <bounding box top center Z>, <X velocity>, <Y velocity>, <Z velocity>, <ROI width>, <ROI height>,confidence
         // ps.println("timestamp,personID,personcentroidX,personcentroidY,personcentroidZ,boundingboxtopcenterX,boundingboxtopcenterY,boundingboxtopcenterZ,Xvelocity,Yvelocity,Zvelocity,ROIwidth,ROIheight,confidence,radius");
         boolean have_orientation = tp.orientation != null && tp.orientation.length == 4;
-        ps.println(tp.time + ","
+        
+        // Frame number,timestampFromSensor,timestampFromDataCollection,ObjectID,qx,qy,qz,qw,x,y,z,latency
+        ps.println(frameNumber+","
+                + remoteTimeStamp+","
+                + tp.time + ","
                 + name + ","
-                + tp.x + ","
-                + tp.y + ","
-                + tp.z + ","
-                + tp.x + ","
-                + tp.y + ","
-                + tp.z + ","
-                + tp.vel_x + ","
-                + tp.vel_y + ","
-                + tp.vel_z + ","
-                + tp.ROI_width + ","
-                + tp.ROI_height + ","
-                + tp.confidence + ","
-                + tp.radius + ","
-                + tp.source + ","
-                + tp.getLatency() + ","
-                + frameNumber + ","
-                + timeSinceLastFrame + ","
-                + remoteTimeStamp + ","
                 + (have_orientation ? tp.orientation[0] : Double.NaN) + ","
-                + (have_orientation ? tp.orientation[1] : Double.NaN) + ","
+                + (have_orientation ? tp.orientation[1] : Double.NaN) + "," 
                 + (have_orientation ? tp.orientation[2] : Double.NaN) + ","
                 + (have_orientation ? tp.orientation[3] : Double.NaN) + ","
-        );
+                + tp.x + ","
+                + tp.y + ","
+                + tp.z + ","
+                + tp.getLatency()
+         );
+//        ps.println(tp.time + ","
+//                + name + ","
+//                + tp.x + ","
+//                + tp.y + ","
+//                + tp.z + ","
+//                + tp.x + ","
+//                + tp.y + ","
+//                + tp.z + ","
+//                + tp.vel_x + ","
+//                + tp.vel_y + ","
+//                + tp.vel_z + ","
+//                + tp.ROI_width + ","
+//                + tp.ROI_height + ","
+//                + tp.confidence + ","
+//                + tp.radius + ","
+//                + tp.source + ","
+//                + tp.getLatency() + ","
+//                + frameNumber + ","
+//                + timeSinceLastFrame + ","
+//                + remoteTimeStamp + ","
+//                + (have_orientation ? tp.orientation[0] : Double.NaN) + ","
+//                + (have_orientation ? tp.orientation[1] : Double.NaN) + ","
+//                + (have_orientation ? tp.orientation[2] : Double.NaN) + ","
+//                + (have_orientation ? tp.orientation[3] : Double.NaN) + ","
+//        );
     }
 
     @Override

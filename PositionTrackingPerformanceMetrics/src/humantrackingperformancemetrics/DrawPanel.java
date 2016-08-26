@@ -1206,18 +1206,20 @@ public class DrawPanel extends JPanel {
                         d.height - pix_y);
             }
             pt = t.data.get(t.data.size() - 1);
-            double end_x = (this.displayCoordType == coordType.ZY) ? pt.z : pt.x;
-            double end_y = (this.displayCoordType == coordType.XZ) ? -pt.z : pt.y;
-            int end_pix_x = (int) ((end_x - x_min) / scale);
-            int end_pix_y = (int) ((end_y - y_min) / scale);
-            if (Math.abs(current_pix_x - end_pix_x) + Math.abs(current_pix_y - end_pix_y) > 50) {
-                if (Math.abs(pix_x - end_pix_x) + Math.abs(pix_y - end_pix_y) > 50) {
-                    g.drawString("End(" + t.toString() + String.format(")={%.2f,%.2f,%.2f})",
-                            pt.x,
-                            pt.y,
-                            pt.z),
-                            end_pix_x,
-                            d.height - end_pix_y);
+            if (null != pt) {
+                double end_x = (this.displayCoordType == coordType.ZY) ? pt.z : pt.x;
+                double end_y = (this.displayCoordType == coordType.XZ) ? -pt.z : pt.y;
+                int end_pix_x = (int) ((end_x - x_min) / scale);
+                int end_pix_y = (int) ((end_y - y_min) / scale);
+                if (Math.abs(current_pix_x - end_pix_x) + Math.abs(current_pix_y - end_pix_y) > 50) {
+                    if (Math.abs(pix_x - end_pix_x) + Math.abs(pix_y - end_pix_y) > 50) {
+                        g.drawString("End(" + t.toString() + String.format(")={%.2f,%.2f,%.2f})",
+                                pt.x,
+                                pt.y,
+                                pt.z),
+                                end_pix_x,
+                                d.height - end_pix_y);
+                    }
                 }
             }
         }

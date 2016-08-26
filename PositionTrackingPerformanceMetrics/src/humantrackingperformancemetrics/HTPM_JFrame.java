@@ -4158,7 +4158,7 @@ public class HTPM_JFrame extends javax.swing.JFrame {
     }
 
     public static void printHeader(PrintStream ps) {
-        ps.println("timestamp,personID,personcentroidX,personcentroidY,personcentroidZ,boundingboxtopcenterX,boundingboxtopcenterY,boundingboxtopcenterZ,Xvelocity,Yvelocity,Zvelocity,ROIwidth,ROIheight,confidence,radius,source,latency,frameNumber,timeSinceLastFrame,remoteTimeStamp,qx,qy,qz,qw");
+        ps.println("Frame number,timestampFromSensor,timestampFromDataCollection,ObjectID,qx,qy,qz,qw,x,y,z,latency");
     }
 
     /**

@@ -2554,9 +2554,9 @@ public class HTPM_JFrame extends javax.swing.JFrame {
                 || HTPM_JFrame.sutlist.get(0) == null) {
             return null;
         }
-        if (HTPM_JFrame.sutlist == null
-                || HTPM_JFrame.sutlist.size() < 1
-                || HTPM_JFrame.sutlist.get(0) == null) {
+        if (HTPM_JFrame.gtlist == null
+                || HTPM_JFrame.gtlist.size() < 1
+                || HTPM_JFrame.gtlist.get(0) == null) {
             return null;
         }
         Track first_sut_track = HTPM_JFrame.sutlist.get(0);

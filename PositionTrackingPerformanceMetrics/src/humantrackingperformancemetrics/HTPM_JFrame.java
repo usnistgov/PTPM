@@ -4086,6 +4086,7 @@ public class HTPM_JFrame extends javax.swing.JFrame {
     private static CsvLinePrinterInterface csvLinePrinter = new CsvLinePrinter();
 
     static boolean check_times = true;
+    
 
     /**
      * Parse one line received from a socket or csv file and create a
@@ -4104,7 +4105,7 @@ public class HTPM_JFrame extends javax.swing.JFrame {
             throw new IllegalArgumentException("parseTrackPointLine() : Not enough fields(" + fields.length + "<" + fields_needed + ") in :" + line);
         }
         double time = Double.valueOf(fields[o.TIME_INDEX]) * o.TIME_SCALE + o.TIME_OFFSET;
-        if (time < 1325376000.0 || time > 2587680000.0 && check_times) {
+        if ((time < 1325376000.0 || time > 2587680000.0) && check_times) {
             int confirm = JOptionPane.showConfirmDialog(null, "Time = " + time + " (" + new Date((long) (time * 1e3)) + ") seems improbable. Continue?");
             System.out.println("line = " + line);
             System.out.println("fields[TIME_INDEX] = " + fields[o.TIME_INDEX]);

@@ -2012,7 +2012,7 @@ public class HTPM_JFrame extends javax.swing.JFrame {
                 outFile.getParentFile().mkdirs();
             }
             ps = new PrintStream(new FileOutputStream(outFile));
-            printHeader(ps);
+            csvLinePrinter.printHeader(ps);
             br.readLine(); // skip line with headings
             int line_num = 2;
             String line = br.readLine();
@@ -3928,10 +3928,10 @@ public class HTPM_JFrame extends javax.swing.JFrame {
                 }
                 if (null != deviceSetupOptions && deviceSetupOptions.getDeviceType() == DeviceTypeEnum.VICON) {
                     this.vicon_print_stream = new PrintStream(new FileOutputStream(f));
-                    printHeader(this.vicon_print_stream);
+                    csvLinePrinter.printHeader(this.vicon_print_stream);
                 } else {
                     this.optitrack_print_stream = new PrintStream(new FileOutputStream(f));
-                    printHeader(this.optitrack_print_stream);
+                    csvLinePrinter.printHeader(this.optitrack_print_stream);
                 }
                 this.jCheckBoxRecording.setSelected(true);
             }
@@ -3947,10 +3947,10 @@ public class HTPM_JFrame extends javax.swing.JFrame {
             File f = new File(filename);
             if (null != deviceSetupOptions && deviceSetupOptions.getDeviceType() == DeviceTypeEnum.VICON) {
                 this.vicon_print_stream = new PrintStream(new FileOutputStream(f));
-                printHeader(this.vicon_print_stream);
+                csvLinePrinter.printHeader(this.vicon_print_stream);
             } else {
                 this.optitrack_print_stream = new PrintStream(new FileOutputStream(f));
-                printHeader(this.optitrack_print_stream);
+                csvLinePrinter.printHeader(this.optitrack_print_stream);
             }
             this.jCheckBoxRecording.setSelected(true);
         } catch (Exception e) {
@@ -4158,10 +4158,7 @@ public class HTPM_JFrame extends javax.swing.JFrame {
         return tp;
     }
 
-    public static void printHeader(PrintStream ps) {
-        ps.println("Frame number,timestampFromSensor,timestampFromDataCollection,ObjectID,qx,qy,qz,qw,x,y,z,latency");
-    }
-
+    
     /**
      * Save a list of tracks to a file.
      *
@@ -4175,7 +4172,7 @@ public class HTPM_JFrame extends javax.swing.JFrame {
                 return;
             }
             PrintStream ps = new PrintStream(new FileOutputStream(f));
-            printHeader(ps);
+            csvLinePrinter.printHeader(ps);
             for (Track t : tracks) {
                 for (TrackPoint tp : t.data) {
                     csvLinePrinter.printOneLine(tp, t.name, -1, Double.NaN, 0.0, ps);
@@ -4477,7 +4474,7 @@ public class HTPM_JFrame extends javax.swing.JFrame {
                 f.getParentFile().mkdirs();
             }
             PrintStream ps = new PrintStream(new FileOutputStream(f));
-            printHeader(ps);
+            csvLinePrinter.printHeader(ps);
             for (int i = 0; i < newCombinedList.size(); i++) {
                 TrackPoint tp = newCombinedList.get(i);
                 if (null != tp) {
@@ -5474,7 +5471,7 @@ public class HTPM_JFrame extends javax.swing.JFrame {
         boolean existed = f.exists();
         PrintStream ps = new PrintStream(new FileOutputStream(f, true));
         if (!existed) {
-            printHeader(ps);
+            csvLinePrinter.printHeader(ps);
         }
         List<Track> tracks = this.drawPanel1.tracks;
         for (Track t : tracks) {
@@ -5539,7 +5536,7 @@ public class HTPM_JFrame extends javax.swing.JFrame {
                 }
                 if (!promptedLogFile.exists()) {
                     PrintStream ps = new PrintStream(new FileOutputStream(promptedLogFile));
-                    printHeader(ps);
+                    csvLinePrinter.printHeader(ps);
                     ps.close();
                 }
                 java.awt.EventQueue.invokeLater(new Runnable() {
@@ -6053,7 +6050,7 @@ public class HTPM_JFrame extends javax.swing.JFrame {
         System.out.println("transformed " + f + " to " + transformedFile);
         try (BufferedReader br = new BufferedReader(new FileReader(f));
                 PrintStream ps = new PrintStream(new FileOutputStream(transformedFile))) {
-            printHeader(ps);
+            csvLinePrinter.printHeader(ps);
             String line = br.readLine();
             while (null != (line = br.readLine())) {
                 TrackPoint pt = parseTrackPointLine(line, o);
@@ -7131,8 +7128,8 @@ public class HTPM_JFrame extends javax.swing.JFrame {
             PrintStream ps_gt = new PrintStream(new FileOutputStream(gtfile));
             File sutfile = new File("sut.csv");
             PrintStream ps_sut = new PrintStream(new FileOutputStream(sutfile));
-            printHeader(ps_gt);
-            printHeader(ps_sut);
+            csvLinePrinter.printHeader(ps_gt);
+            csvLinePrinter.printHeader(ps_sut);
             LinkedList<GTHumanState> generated_gtlist = new LinkedList<GTHumanState>();
             Random r = new Random();
             ArrayList<Integer> sutIdList = new ArrayList<Integer>();

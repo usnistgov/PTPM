@@ -79,6 +79,8 @@ public class ViconDataStream extends MonitoredConnection {
                 }
                 lastFrameNumber = frameNumber;
                 double latency = client.getLatencyTotal();
+                ViconClient.Timecode timecode = client.getTimecode();
+                System.out.println("timecode = " + timecode);
                 long subjectCount = client.getSubjectCount();
                 for (int subjectIndex = 0; subjectIndex < subjectCount; subjectIndex++) {
                     String subjectName = client.getSubjectName(subjectIndex);

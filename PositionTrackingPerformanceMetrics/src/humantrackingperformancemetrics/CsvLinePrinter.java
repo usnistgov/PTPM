@@ -18,12 +18,18 @@
  * versions bear some notice that they have been modified.
  * 
  */
-
 package humantrackingperformancemetrics;
 
 import java.io.PrintStream;
 
 /**
+ * Class used to write CSV files. CSV files should have a simple format with a a
+ * header for each column on the first line, and a fixed set of columns matching
+ * the header with data on each subsequent row.
+ *
+ * (PrintStream is expected to come from a File, but System.out or a sockets
+ * output stream could also be used.)
+ *
  *
  * @author Will Shackleford {@literal <william.shackleford@nist.gov>}
  */
@@ -40,53 +46,34 @@ public class CsvLinePrinter implements CsvLinePrinterInterface {
     @Override
     public void printOneLine(TrackPoint tp, String name, long frameNumber, double timeSinceLastFrame, double remoteTimeStamp, PrintStream ps) throws Exception {
         //<timestamp>, <person ID>, <person centroid X>, <person centroid Y>, <person centroid Z>,<bounding box top center X>, <bounding box top center Y>,  <bounding box top center Z>, <X velocity>, <Y velocity>, <Z velocity>, <ROI width>, <ROI height>,confidence
-        // ps.println("timestamp,personID,personcentroidX,personcentroidY,personcentroidZ,boundingboxtopcenterX,boundingboxtopcenterY,boundingboxtopcenterZ,Xvelocity,Yvelocity,Zvelocity,ROIwidth,ROIheight,confidence,radius");
         boolean have_orientation = tp.orientation != null && tp.orientation.length == 4;
-        
-        // Frame number,timestampFromSensor,timestampFromDataCollection,ObjectID,qx,qy,qz,qw,x,y,z,latency
-        ps.println(frameNumber+","
-                + remoteTimeStamp+","
+
+        // Frame number,timestampFromSensor,timestampFromDataCollection,ObjectID,qx,qy,qz,qw,x,y,z,latency"
+        ps.println(frameNumber + ","
+                + remoteTimeStamp + ","
                 + tp.time + ","
                 + name + ","
                 + (have_orientation ? tp.orientation[0] : Double.NaN) + ","
-                + (have_orientation ? tp.orientation[1] : Double.NaN) + "," 
+                + (have_orientation ? tp.orientation[1] : Double.NaN) + ","
                 + (have_orientation ? tp.orientation[2] : Double.NaN) + ","
                 + (have_orientation ? tp.orientation[3] : Double.NaN) + ","
                 + tp.x + ","
                 + tp.y + ","
                 + tp.z + ","
                 + tp.getLatency()
-         );
-//        ps.println(tp.time + ","
-//                + name + ","
-//                + tp.x + ","
-//                + tp.y + ","
-//                + tp.z + ","
-//                + tp.x + ","
-//                + tp.y + ","
-//                + tp.z + ","
-//                + tp.vel_x + ","
-//                + tp.vel_y + ","
-//                + tp.vel_z + ","
-//                + tp.ROI_width + ","
-//                + tp.ROI_height + ","
-//                + tp.confidence + ","
-//                + tp.radius + ","
-//                + tp.source + ","
-//                + tp.getLatency() + ","
-//                + frameNumber + ","
-//                + timeSinceLastFrame + ","
-//                + remoteTimeStamp + ","
-//                + (have_orientation ? tp.orientation[0] : Double.NaN) + ","
-//                + (have_orientation ? tp.orientation[1] : Double.NaN) + ","
-//                + (have_orientation ? tp.orientation[2] : Double.NaN) + ","
-//                + (have_orientation ? tp.orientation[3] : Double.NaN) + ","
-//        );
+        );
     }
 
+    /**
+     * Print the header line to the print stream provided. (PrintStream is
+     * expected to come from a File, but System.out or a sockets output stream
+     * could also be used.)
+     *
+     * @param ps stream to print to
+     */
     @Override
     public void printHeader(PrintStream ps) {
-        ps.println("timestamp,personID,personcentroidX,personcentroidY,personcentroidZ,boundingboxtopcenterX,boundingboxtopcenterY,boundingboxtopcenterZ,Xvelocity,Yvelocity,Zvelocity,ROIwidth,ROIheight,confidence,radius,source,latency,frameNumber,timeSinceLastFrame,remoteTimeStamp,qx,qy,qz,qw");
+        ps.println("Frame number,timestampFromSensor(s),timestampFromDataCollection(s),ObjectID,qx,qy,qz,qw,x(m),y(m),z(m),latency(s)");
     }
 
 }

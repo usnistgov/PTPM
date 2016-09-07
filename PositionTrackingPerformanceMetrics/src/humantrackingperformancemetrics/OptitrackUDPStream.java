@@ -729,6 +729,7 @@ public class OptitrackUDPStream extends MonitoredConnection {
 
         // latency
         df.latency = readFloatFromByteArray(data, offset);
+        df.latency *= 1e-3f; // convert from milliseconds to seconds
         offset += 4;
         if (debug) {
             System.out.println("df.latency = " + df.latency);

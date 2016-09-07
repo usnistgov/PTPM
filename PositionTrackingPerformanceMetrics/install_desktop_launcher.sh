@@ -13,49 +13,49 @@ if test "x${JAVA}" = "x" ; then
     exit 1;
 fi 
 
-export HTPM_DIR=`pwd`;
+export PTPM_DIR=`pwd`;
 
-sudo -n mkdir -p /usr/local/HumanTrackingPerformanceMetrics/dist && \
-    sudo -n mkdir -p /usr/local/HumanTrackingPerformanceMetrics/src/htpm_resources && \
-    sudo -n cp -a dist/* /usr/local/HumanTrackingPerformanceMetrics/dist && \
-    sudo -n cp -a src/htpm_resources/* /usr/local/HumanTrackingPerformanceMetrics/src/htpm_resources && \
-    sudo -n chmod a+r -R /usr/local/HumanTrackingPerformanceMetrics/ && \
-    sudo -n chmod a+rx  /usr/local/HumanTrackingPerformanceMetrics/ && \
-    sudo -n chmod a+rx  /usr/local/HumanTrackingPerformanceMetrics/src && \
-    sudo -n chmod a+rx  /usr/local/HumanTrackingPerformanceMetrics/src/htpm_resources && \
-    sudo -n chmod a+rx  /usr/local/HumanTrackingPerformanceMetrics/dist && \
-    sudo -n chmod a+rx  /usr/local/HumanTrackingPerformanceMetrics/dist/HumanTrackingPerformanceMetrics.jar && \
-    export HTPM_DIR=/usr/local/HumanTrackingPerformanceMetrics/;
+sudo -n mkdir -p /usr/local/PositionTrackingPerformanceMetrics/dist && \
+    sudo -n mkdir -p /usr/local/PositionTrackingPerformanceMetrics/src/ptpm_resources && \
+    sudo -n cp -a dist/* /usr/local/PositionTrackingPerformanceMetrics/dist && \
+    sudo -n cp -a src/ptpm_resources/* /usr/local/PositionTrackingPerformanceMetrics/src/ptpm_resources && \
+    sudo -n chmod a+r -R /usr/local/PositionTrackingPerformanceMetrics/ && \
+    sudo -n chmod a+rx  /usr/local/PositionTrackingPerformanceMetrics/ && \
+    sudo -n chmod a+rx  /usr/local/PositionTrackingPerformanceMetrics/src && \
+    sudo -n chmod a+rx  /usr/local/PositionTrackingPerformanceMetrics/src/ptpm_resources && \
+    sudo -n chmod a+rx  /usr/local/PositionTrackingPerformanceMetrics/dist && \
+    sudo -n chmod a+rx  /usr/local/PositionTrackingPerformanceMetrics/dist/PositionTrackingPerformanceMetrics.jar && \
+    export PTPM_DIR=/usr/local/PositionTrackingPerformanceMetrics/;
 
-cat >htpm.desktop <<EOF
+cat >ptpm.desktop <<EOF
 #!/usr/bin/env xdg-open
 [Desktop Entry]
 Version=1.0
-Name=Human Tracking Performance Metrics
-Icon=${HTPM_DIR}/src/htpm_resources/cropped_screenshot.png
-Exec=${JAVA} -jar ${HTPM_DIR}/dist/HumanTrackingPerformanceMetrics.jar
+Name=Position Tracking Performance Metrics
+Icon=${PTPM_DIR}/src/ptpm_resources/cropped_screenshot.png
+Exec=${JAVA} -jar ${PTPM_DIR}/dist/PositionTrackingPerformanceMetrics.jar
 Type=Application
 Terminal=true
 EOF
 
-chmod a+rx htpm.desktop
+chmod a+rx ptpm.desktop
 
 if test -d "${HOME}/Desktop/"  ; then
-    echo "Copying  htpm.desktop to ${HOME}/Desktop/"
-    cp htpm.desktop ${HOME}/Desktop/
-    chmod a+rx ${HOME}/Desktop/htpm.desktop
+    echo "Copying  ptpm.desktop to ${HOME}/Desktop/"
+    cp ptpm.desktop ${HOME}/Desktop/
+    chmod a+rx ${HOME}/Desktop/ptpm.desktop
 fi
 
 if test -d "${HOME}/.local/share/applications/" ; then
-    echo "Copying  htpm.desktop to ${HOME}/.local/share/applications/"
-    cp htpm.desktop ${HOME}/.local/share/applications/
-    chmod a+rx ${HOME}/.local/share/applications/htpm.desktop
+    echo "Copying  ptpm.desktop to ${HOME}/.local/share/applications/"
+    cp ptpm.desktop ${HOME}/.local/share/applications/
+    chmod a+rx ${HOME}/.local/share/applications/ptpm.desktop
 fi
 
 if test -d "/usr/share/applications/" ; then
-    echo "Copying  htpm.desktop to /usr/share/applications/"
-    sudo -n cp htpm.desktop /usr/share/applications/
-    sudo -n chmod a+rx /usr/share/applications/htpm.desktop
+    echo "Copying  ptpm.desktop to /usr/share/applications/"
+    sudo -n cp ptpm.desktop /usr/share/applications/
+    sudo -n chmod a+rx /usr/share/applications/ptpm.desktop
 fi
 
 

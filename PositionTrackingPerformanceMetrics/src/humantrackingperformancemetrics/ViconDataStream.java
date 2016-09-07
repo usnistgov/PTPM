@@ -146,7 +146,7 @@ public class ViconDataStream extends MonitoredConnection {
                     }
                 }
             }
-        } catch (Exception exception) {
+        } catch (final Exception exception) {
             javax.swing.SwingUtilities.invokeLater(new Runnable() {
                 @Override
                 public void run() {

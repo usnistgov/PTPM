@@ -1,0 +1,8 @@
+#!/usr/bin/env xdg-open
+[Desktop Entry]
+Version=1.0
+Name=Position Tracking Performance Metrics
+Icon=/mnt/ubuntu/home/shackle/PTPM/PositionTrackingPerformanceMetrics/src/ptpm_resources/cropped_screenshot.png
+Exec=/usr/local/jdk1.8.0_73//bin/java -jar /mnt/ubuntu/home/shackle/PTPM/PositionTrackingPerformanceMetrics/dist/PositionTrackingPerformanceMetrics.jar
+Type=Application
+Terminal=true
